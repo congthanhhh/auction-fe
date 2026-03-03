@@ -73,16 +73,16 @@ export default function HomePage() {
     return (
         <div className="bg-gray-50 dark:bg-gray-900">
             {/* Hero Banner - giống shopgoodwill */}
-            <div className="bg-linear-to-r from-blue-600 to-blue-800 dark:from-blue-800 dark:to-blue-950 text-white">
-                <div className="container mx-auto px-4 py-16">
-                    <div className="max-w-2xl">
+            <div className="container mx-auto px-4">
+                <div className="py-15 bg-linear-to-r from-brand to-brand-hover dark:from-brand-hover dark:to-brand-hover text-white">
+                    <div className="max-w-2xl px-4">
                         <h1 className="text-4xl md:text-5xl font-bold mb-4">
                             JEWELRY WORTH GIVING OR KEEPING
                         </h1>
                         <p className="text-xl mb-6">
                             Discover unique treasures at unbeatable prices
                         </p>
-                        <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 font-semibold">
+                        <Button size="lg" className="bg-white text-brand hover:bg-gray-100 font-semibold">
                             SHOP NOW
                             <ArrowRight className="ml-2 h-5 w-5" />
                         </Button>
@@ -94,7 +94,7 @@ export default function HomePage() {
             <div className="container mx-auto px-4 py-12">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-3xl font-bold dark:text-white">FEATURED ITEMS</h2>
-                    <Link to="/featured" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                    <Link to="/featured" className="text-brand dark:text-brand hover:underline flex items-center gap-1">
                         View All Featured Items
                         <ArrowRight className="h-4 w-4" />
                     </Link>
@@ -114,7 +114,7 @@ export default function HomePage() {
                 <div className="container mx-auto px-4">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-3xl font-bold dark:text-white">SHOP TOP CATEGORIES</h2>
-                        <Link to="/categories" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                        <Link to="/categories" className="text-brand dark:text-brand hover:underline flex items-center gap-1">
                             View All Categories
                             <ArrowRight className="h-4 w-4" />
                         </Link>
@@ -126,11 +126,11 @@ export default function HomePage() {
                             return (
                                 <Card
                                     key={category.name}
-                                    className="hover:shadow-lg hover:border-blue-500 dark:hover:border-blue-400 transition-all group"
+                                    className="hover:shadow-lg hover:border-brand dark:hover:border-brand transition-all group"
                                 >
                                     <Link to={category.link}>
                                         <CardContent className="p-6 text-center">
-                                            <Icon className="h-12 w-12 mx-auto mb-3 text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                                            <Icon className="h-12 w-12 mx-auto mb-3 text-muted-foreground group-hover:text-brand dark:group-hover:text-brand" />
                                             <h3 className="font-semibold text-sm">{category.name}</h3>
                                         </CardContent>
                                     </Link>
@@ -145,10 +145,10 @@ export default function HomePage() {
             <div className="container mx-auto px-4 py-12">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* 1¢ Shipping */}
-                    <Card className="border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
+                    <Card className="border-2 border-brand dark:border-brand bg-brand/10 dark:bg-brand/10">
                         <CardHeader className="text-center">
                             <div className="flex justify-center mb-2">
-                                <Truck className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+                                <Truck className="h-12 w-12 text-brand dark:text-brand" />
                             </div>
                             <CardTitle className="text-2xl">1¢ Shipping</CardTitle>
                             <CardDescription className="text-base dark:text-gray-300">
@@ -156,7 +156,7 @@ export default function HomePage() {
                             </CardDescription>
                         </CardHeader>
                         <CardFooter className="justify-center">
-                            <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white dark:border-blue-500 dark:text-blue-400">
+                            <Button variant="outline" className="border-brand text-brand hover:bg-brand hover:text-white dark:border-brand dark:text-brand">
                                 Shop 1¢ Shipping Items
                             </Button>
                         </CardFooter>
@@ -205,7 +205,7 @@ export default function HomePage() {
                 <div className="container mx-auto px-4">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-3xl font-bold dark:text-white">RECOMMENDED FOR YOU</h2>
-                        <Link to="/recommended" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                        <Link to="/recommended" className="text-brand dark:text-brand hover:underline flex items-center gap-1">
                             View All Recommended
                             <ArrowRight className="h-4 w-4" />
                         </Link>

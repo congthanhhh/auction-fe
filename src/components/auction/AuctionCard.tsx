@@ -52,7 +52,7 @@ export default function AuctionCard({
             </Link>
 
             <CardContent className="p-4 pb-0">
-                <Link to={`/auction/${id}`} className="hover:text-blue-600 dark:hover:text-blue-400">
+                <Link to={`/auction/${id}`} className="hover:text-brand dark:hover:text-brand">
                     <h3 className="font-semibold text-sm line-clamp-2 min-h-10 mb-3">
                         {title}
                     </h3>
@@ -69,7 +69,7 @@ export default function AuctionCard({
                     ) : (
                         <div>
                             <p className="text-xs text-muted-foreground">Current Bid</p>
-                            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                            <p className="text-xl font-bold text-brand dark:text-brand">
                                 ${currentBid.toFixed(2)}
                             </p>
                         </div>
@@ -91,7 +91,7 @@ export default function AuctionCard({
                         Buy It Now
                     </Button>
                 ) : (
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600">
+                    <Button className="w-full bg-brand hover:bg-brand-hover dark:bg-brand-hover dark:hover:bg-brand">
                         Quick Bid
                     </Button>
                 )}
