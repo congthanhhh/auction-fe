@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { Heart, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '../ui/separator';
+// use skeleton for loading state
 
 interface AuctionCardProps {
     id: number;
@@ -22,80 +23,56 @@ export default function AuctionCard({
     currentBid,
     bids,
     timeRemaining,
-    isBuyNow,
-    buyNowPrice
 }: AuctionCardProps) {
     return (
-        <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
+        <Card className="overflow-hidden shadow-xs hover:shadow-md transition-all p-0 group rounded-none border-white dark:border-gray-700 gap-2">
             <Link to={`/auction/${id}`} className="block relative">
-                <img
-                    src={image}
-                    alt={title}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform"
-                />
-                <Button
-                    variant="secondary"
-                    size="icon"
-                    className="absolute top-2 right-2 rounded-full shadow-md"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        // Handle favorite toggle
-                    }}
-                >
-                    <Heart className="h-4 w-4" />
-                </Button>
-                {isBuyNow && (
-                    <Badge className="absolute top-2 left-2 bg-green-600 hover:bg-green-700">
-                        Buy It Now
-                    </Badge>
-                )}
+                <div className="relative w-full aspect-square bg-gray-100 dark:bg-gray-800">
+                    <img
+                        src={image}
+                        alt={title}
+                        className="w-full h-full object-cover"
+                    />
+                </div>
             </Link>
-
-            <CardContent className="p-4 pb-0">
-                <Link to={`/auction/${id}`} className="hover:text-brand dark:hover:text-brand">
-                    <h3 className="font-semibold text-sm line-clamp-2 min-h-10 mb-3">
-                        {title}
-                    </h3>
-                </Link>
-
-                <div className="space-y-2">
-                    {isBuyNow ? (
-                        <div>
-                            <p className="text-xs text-muted-foreground">Buy It Now</p>
-                            <p className="text-xl font-bold text-green-600 dark:text-green-500">
-                                ${buyNowPrice?.toFixed(2)}
-                            </p>
-                        </div>
-                    ) : (
-                        <div>
-                            <p className="text-xs text-muted-foreground">Current Bid</p>
-                            <p className="text-xl font-bold text-brand dark:text-brand">
-                                ${currentBid.toFixed(2)}
-                            </p>
-                        </div>
-                    )}
-
-                    <div className="flex justify-between items-center text-sm text-muted-foreground">
-                        <Badge variant="outline">{bids} Bids</Badge>
-                        <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {timeRemaining}
-                        </span>
+            <CardContent className="p-2 pt-0">
+                <div className='flex justify-between items-start gap-1'>
+                    <Link to={`/auction/${id}`} className="hover:text-brand hover:underline">
+                        <h3 className="text-sm font-normal line-clamp-2 min-h-10">
+                            {title}
+                        </h3>
+                    </Link>
+                    <div>
+                        <Heart size={20} fill='red' color='red' />
                     </div>
                 </div>
-            </CardContent>
+                <div className="py-1">
+                    <p className="font-bold text-gray-900 dark:text-white">
+                        {currentBid.toFixed(2)}đ
+                    </p>
+                </div>
+                <div className="flex items-center h-5 text-sm text-gray-600 dark:text-gray-400 gap-2">
+                    <span>Bids: {bids}</span>
+                    <Separator orientation="vertical" />
+                    <span className="flex items-center">
+                        <Clock className="h-3 w-3" />
+                        {timeRemaining}
+                    </span>
+                    <Separator orientation="vertical" />
+                    <Button className='text-brand hover:text-brand-hover px-0'
+                        size="sm" variant="ghost"
+                    >
+                        Quick bid
+                    </Button>
+                    <Separator orientation="vertical" />
+                    <Button className='text-brand hover:text-brand-hover px-0'
+                        size="sm" variant="ghost"
+                    >
+                        Buy it now
+                    </Button>
+                </div>
 
-            <CardFooter className="p-4 pt-3">
-                {isBuyNow ? (
-                    <Button className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600">
-                        Buy It Now
-                    </Button>
-                ) : (
-                    <Button className="w-full bg-brand hover:bg-brand-hover dark:bg-brand-hover dark:hover:bg-brand">
-                        Quick Bid
-                    </Button>
-                )}
-            </CardFooter>
+            </CardContent>
         </Card>
     );
 }

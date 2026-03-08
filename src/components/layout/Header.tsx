@@ -3,12 +3,7 @@ import { Search, User, Menu, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ThemeToggle } from '@/components/theme-toggle';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Sheet,
     SheetContent,
@@ -16,6 +11,12 @@ import {
     SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     Collapsible,
     CollapsibleContent,
@@ -29,14 +30,14 @@ export default function Header() {
     const [categoryOpen, setCategoryOpen] = useState(false);
     const [myShopOpen, setMyShopOpen] = useState(false);
     return (
-        <header className="border-b bg-white dark:bg-gray-900 sticky top-0 z-50 shadow-sm">
+        <header className="border-b bg-white dark:bg-gray-900 top-0 z-50 shadow-sm">
             {/* Desktop Header - Hidden on mobile */}
             <div className="hidden lg:block">
                 {/* Main Header */}
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         {/* Logo */}
-                        <Link to="/" className="text-2xl font-bold text-brand dark:text-brand whitespace-nowrap">
+                        <Link to="/" className="text-2xl font-bold text-brand2 dark:text-brand whitespace-nowrap">
                             AuctionShop
                         </Link>
 
@@ -74,47 +75,60 @@ export default function Header() {
                 <div className="">
                     <div className="container mx-auto px-4">
                         <nav className="grid grid-cols-5 gap-1">
-                            {/* Category - Collapsible */}
-                            <div className="relative">
-                                <Collapsible open={categoryOpen} onOpenChange={setCategoryOpen}>
-                                    <CollapsibleTrigger asChild>
-                                        <button className="text-white bg-brand2 uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center gap-2 text-sm font-semibold w-full">
-                                            Category
-                                            <ChevronDown className={`h-4 w-4 transition-transform ${categoryOpen ? 'rotate-180' : ''}`} />
-                                        </button>
-                                    </CollapsibleTrigger>
-                                    <CollapsibleContent className="absolute top-full left-0 z-50 w-72 bg-white dark:bg-gray-800 border rounded-md shadow-lg mt-1">
-                                        <div className="p-1">
-                                            <Link to="/categories/clothing" className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                            {/* Category - DropdownMenu */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="text-white bg-brand2 uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center gap-2 text-lg font-semibold w-full">
+                                        Category
+                                        <ChevronDown className="h-4 w-4" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-72 h-96" align="start">
+                                    <ScrollArea className="">
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/categories/clothing" className="px-4 py-2 text-xl cursor-pointer">
                                                 Clothing
                                             </Link>
-                                            <Link to="/categories/electronics" className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/categories/electronics" className="px-4 py-2 text-xl cursor-pointer">
                                                 Electronics
                                             </Link>
-                                            <Link to="/categories/art" className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/categories/art" className="px-4 py-2 text-xl cursor-pointer">
                                                 Art
                                             </Link>
-                                            <Link to="/categories/collectibles" className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/categories/collectibles" className="px-4 py-2 text-xl cursor-pointer">
                                                 Collectibles
                                             </Link>
-                                            <Link to="/categories/home" className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/categories/home" className="px-4 py-2 text-xl cursor-pointer">
                                                 For The Home
                                             </Link>
-                                            <Link to="/categories/jewelry" className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/categories/jewelry" className="px-4 py-2 text-xl cursor-pointer">
                                                 Jewelry & Gemstones
                                             </Link>
-                                            <Link to="/categories/toys" className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/categories/toys" className="px-4 py-2 text-xl cursor-pointer">
                                                 Toys & Games
                                             </Link>
-                                        </div>
-                                    </CollapsibleContent>
-                                </Collapsible>
-                            </div>
+                                        </DropdownMenuItem>
+
+                                    </ScrollArea>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
 
                             {/* Feature */}
                             <Link
                                 to="/feature"
-                                className="bg-brand2 text-white uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center text-sm font-semibold"
+                                className="bg-brand2 text-white uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center text-lg font-semibold"
                             >
                                 Feature
                             </Link>
@@ -122,46 +136,54 @@ export default function Header() {
                             {/* Newly List */}
                             <Link
                                 to="/newly-list"
-                                className="bg-brand2 text-white uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center text-sm font-semibold"
+                                className="bg-brand2 text-white uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center text-lg font-semibold"
                             >
                                 Newly List
                             </Link>
 
-                            {/* MyShop - Collapsible */}
-                            <div className="relative">
-                                <Collapsible open={myShopOpen} onOpenChange={setMyShopOpen}>
-                                    <CollapsibleTrigger asChild>
-                                        <button className="text-white bg-brand2 uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center gap-2 text-sm font-semibold w-full">
-                                            MyShop
-                                            <ChevronDown className={`h-4 w-4 transition-transform ${myShopOpen ? 'rotate-180' : ''}`} />
-                                        </button>
-                                    </CollapsibleTrigger>
-                                    <CollapsibleContent className="absolute top-full left-0 z-50 w-72 bg-white dark:bg-gray-800 border rounded-md shadow-lg mt-1">
-                                        <div className="p-1">
-                                            <Link to="/myshop/selling" className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                            {/* MyShop - DropdownMenu */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="text-white bg-brand2 uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center gap-2 text-lg font-semibold w-full">
+                                        MyShop
+                                        <ChevronDown className="h-4 w-4" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-72 h-96" align="start">
+                                    <ScrollArea className="h-72">
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/myshop/selling" className="px-4 py-2 text-xl cursor-pointer">
                                                 My Selling Items
                                             </Link>
-                                            <Link to="/myshop/bidding" className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/myshop/bidding" className="px-4 py-2 text-xl cursor-pointer">
                                                 My Bidding Items
                                             </Link>
-                                            <Link to="/myshop/watchlist" className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/myshop/watchlist" className="px-4 py-2 text-xl cursor-pointer">
                                                 My Watchlist
                                             </Link>
-                                            <Link to="/myshop/won" className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/myshop/won" className="px-4 py-2 text-xl cursor-pointer">
                                                 Items Won
                                             </Link>
-                                            <Link to="/myshop/orders" className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/myshop/orders" className="px-4 py-2 text-xl cursor-pointer">
                                                 My Orders
                                             </Link>
-                                        </div>
-                                    </CollapsibleContent>
-                                </Collapsible>
-                            </div>
+                                        </DropdownMenuItem>
+                                    </ScrollArea>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
 
                             {/* Stories */}
                             <Link
                                 to="/stories"
-                                className="bg-brand2 text-white uppercase tracking-widest py-3 hover:bg-brand transition-colors flex items-center justify-center text-sm font-semibold"
+                                className="bg-brand2 text-white uppercase tracking-widest py-3 hover:bg-brand transition-colors flex items-center justify-center text-lg font-semibold"
                             >
                                 Stories
                             </Link>
@@ -188,7 +210,7 @@ export default function Header() {
                                 <div className="flex flex-col gap-4 mt-6">
                                     {/* Sign In Button */}
                                     <Link to="/signin" onClick={() => setMobileMenuOpen(false)}>
-                                        <Button className="w-full bg-brand hover:bg-brand-hover">
+                                        <Button className="w-full bg-brand text-lg hover:bg-brand-hover">
                                             <User className="mr-2" />
                                             Sign In
                                         </Button>
@@ -199,73 +221,75 @@ export default function Header() {
                                         {/* Category - Collapsible */}
                                         <Collapsible open={categoryOpen} onOpenChange={setCategoryOpen}>
                                             <CollapsibleTrigger asChild>
-                                                <Button variant="outline" className="w-full justify-between">
-                                                    <p className='text-center'>Category</p>
+                                                <Button variant="outline" className="w-full text-lg justify-between">
+                                                    <p>Category</p>
                                                     <ChevronDown className={`h-4 w-4 transition-transform ${categoryOpen ? 'rotate-180' : ''}`} />
                                                 </Button>
                                             </CollapsibleTrigger>
                                             <CollapsibleContent className="mt-2 space-y-1">
-                                                <Link to="/categories/clothing" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                                <Link to="/categories/clothing" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
                                                     Clothing
                                                 </Link>
-                                                <Link to="/categories/electronics" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                                <Link to="/categories/electronics" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
                                                     Electronics
                                                 </Link>
-                                                <Link to="/categories/art" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                                <Link to="/categories/art" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
                                                     Art
                                                 </Link>
-                                                <Link to="/categories/collectibles" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                                <Link to="/categories/collectibles" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
                                                     Collectibles
                                                 </Link>
-                                                <Link to="/categories/home" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                                <Link to="/categories/home" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
                                                     For The Home
                                                 </Link>
-                                                <Link to="/categories/jewelry" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                                <Link to="/categories/jewelry" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
                                                     Jewelry & Gemstones
                                                 </Link>
-                                                <Link to="/categories/toys" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm hover:bg-accent rounded-md">
+                                                <Link to="/categories/toys" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg  hover:bg-accent rounded-md">
                                                     Toys & Games
                                                 </Link>
                                             </CollapsibleContent>
                                         </Collapsible>
 
                                         <Link to="/feature" onClick={() => setMobileMenuOpen(false)}>
-                                            <Button variant="outline">Feature</Button>
+                                            <Button variant="outline" className='w-full text-lg justify-start'>Feature</Button>
                                         </Link>
 
                                         <Link to="/newly-list" onClick={() => setMobileMenuOpen(false)}>
-                                            <Button variant="outline">Newly List</Button>
+                                            <Button variant="outline" className='w-full text-lg justify-start'>Newly List</Button>
                                         </Link>
 
                                         {/* MyShop - Collapsible */}
                                         <Collapsible open={myShopOpen} onOpenChange={setMyShopOpen}>
                                             <CollapsibleTrigger asChild>
-                                                <Button variant="outline" className="w-full justify-between">
+                                                <Button variant="outline" className="w-full text-lg justify-between">
                                                     MyShop
                                                     <ChevronDown className={`h-4 w-4 transition-transform ${myShopOpen ? 'rotate-180' : ''}`} />
                                                 </Button>
                                             </CollapsibleTrigger>
                                             <CollapsibleContent className="mt-2 space-y-1">
-                                                <Link to="/myshop/selling" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm text-center hover:bg-accent rounded-md">
-                                                    My Selling Items
+                                                <Link to="/myshop/selling" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
+                                                    My Selling Items 22
                                                 </Link>
-                                                <Link to="/myshop/bidding" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm text-center hover:bg-accent rounded-md">
+                                                <Link to="/myshop/bidding" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
                                                     My Bidding Items
                                                 </Link>
-                                                <Link to="/myshop/watchlist" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm text-center hover:bg-accent rounded-md">
+                                                <Link to="/myshop/watchlist" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
                                                     My Watchlist
                                                 </Link>
-                                                <Link to="/myshop/won" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm text-center hover:bg-accent rounded-md">
+                                                <Link to="/myshop/won" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
                                                     Items Won
                                                 </Link>
-                                                <Link to="/myshop/orders" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-sm text-center hover:bg-accent rounded-md">
+                                                <Link to="/myshop/orders" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
                                                     My Orders
                                                 </Link>
                                             </CollapsibleContent>
                                         </Collapsible>
 
                                         <Link to="/stories" onClick={() => setMobileMenuOpen(false)}>
-                                            <Button variant="outline">Stories</Button>
+                                            <Button variant="outline" className="w-full text-lg justify-start">
+                                                Stories
+                                            </Button>
                                         </Link>
                                     </div>
                                 </div>

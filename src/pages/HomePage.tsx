@@ -11,12 +11,13 @@ export default function HomePage() {
         {
             id: 1,
             title: 'BEST PRICE IGI 1.52Ctw Diamonds (1.02Ct G/SI2 Center) 14KWG Ring Set',
-            image: 'https://placehold.co/400x300/e3f2fd/1976d2?text=Diamond+Ring',
+            image: '/src/assets/demo.jpg',
             currentBid: 3133.00,
             bids: 0,
             timeRemaining: '2d 5h',
             isBuyNow: true,
             buyNowPrice: 3133.00,
+            hasOnecentShipping: true,
         },
         {
             id: 2,
@@ -33,6 +34,7 @@ export default function HomePage() {
             currentBid: 12.99,
             bids: 1,
             timeRemaining: '3d 8h',
+            hasOnecentShipping: true,
         },
         {
             id: 4,
@@ -57,6 +59,7 @@ export default function HomePage() {
             currentBid: 12.99,
             bids: 0,
             timeRemaining: '8h 6m',
+            hasOnecentShipping: true,
         },
     ];
 
@@ -71,8 +74,8 @@ export default function HomePage() {
     ];
 
     return (
-        <div className="bg-gray-50 dark:bg-gray-900">
-            {/* Hero Banner - giống shopgoodwill */}
+        <div className="bg-white dark:bg-gray-900">
+            {/* Hero Banner*/}
             <div className="container mx-auto px-4">
                 <div className="py-15 bg-linear-to-r from-brand to-brand-hover dark:from-brand-hover dark:to-brand-hover text-white">
                     <div className="max-w-2xl px-4">
@@ -93,7 +96,7 @@ export default function HomePage() {
             {/* Featured Items Section */}
             <div className="container mx-auto px-4 py-12">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-3xl font-bold dark:text-white">FEATURED ITEMS</h2>
+                    <h2 className="text-2xl font-bold dark:text-white">FEATURED ITEMS</h2>
                     <Link to="/featured" className="text-brand dark:text-brand hover:underline flex items-center gap-1">
                         View All Featured Items
                         <ArrowRight className="h-4 w-4" />
@@ -107,20 +110,18 @@ export default function HomePage() {
                 </div>
             </div>
 
-            <Separator />
-
             {/* Shop Top Categories - giống shopgoodwill */}
-            <div className="bg-white dark:bg-gray-800 py-12">
+            <div className="bg-white dark:bg-gray-800 py-10">
                 <div className="container mx-auto px-4">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-3xl font-bold dark:text-white">SHOP TOP CATEGORIES</h2>
+                    <div className="flex flex-col justify-center items-center mb-6">
+                        <h2 className="text-2xl font-bold dark:text-white">SHOP TOP CATEGORIES</h2>
                         <Link to="/categories" className="text-brand dark:text-brand hover:underline flex items-center gap-1">
                             View All Categories
                             <ArrowRight className="h-4 w-4" />
                         </Link>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
                         {categories.map((category) => {
                             const Icon = category.icon;
                             return (
@@ -141,7 +142,7 @@ export default function HomePage() {
                 </div>
             </div>
 
-            {/* Promotional Sections - giống shopgoodwill */}
+            {/* Promotional Sections*/}
             <div className="container mx-auto px-4 py-12">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* 1¢ Shipping */}
@@ -204,7 +205,7 @@ export default function HomePage() {
             <div className="bg-white dark:bg-gray-800 py-12">
                 <div className="container mx-auto px-4">
                     <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-3xl font-bold dark:text-white">RECOMMENDED FOR YOU</h2>
+                        <h2 className="text-2xl font-bold dark:text-white">RECOMMENDED FOR YOU</h2>
                         <Link to="/recommended" className="text-brand dark:text-brand hover:underline flex items-center gap-1">
                             View All Recommended
                             <ArrowRight className="h-4 w-4" />
