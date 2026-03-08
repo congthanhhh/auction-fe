@@ -97,7 +97,7 @@ export default function HomePage() {
             <div className="container mx-auto px-4 py-12">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold dark:text-white">FEATURED ITEMS</h2>
-                    <Link to="/featured" className="text-brand dark:text-brand hover:underline flex items-center gap-1">
+                    <Link to="/view-all-featured" className="text-brand dark:text-brand hover:underline flex items-center gap-1">
                         View All Featured Items
                         <ArrowRight className="h-4 w-4" />
                     </Link>
