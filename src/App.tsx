@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
 import MainLayout from './components/layout/MainLayout';
 import HomePage from './pages/HomePage';
 import Profile from './pages/Profile';
@@ -7,8 +8,17 @@ import Recommended from './pages/Recommended';
 import { ThemeProvider } from './components/theme-provider';
 import { SignIn } from './pages/SignIn';
 import { SignUp } from './pages/SignUp';
+import { GoogleAuthCallback } from './pages/GoogleAuthCallback';
+import { useAuthStore } from './stores/authStore';
 
 function App() {
+  const initializeAuth = useAuthStore((state) => state.initializeAuth);
+
+  // Initialize auth state on app load
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <BrowserRouter>
@@ -24,6 +34,7 @@ function App() {
           {/* Routes without MainLayout */}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/authenticate" element={<GoogleAuthCallback />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

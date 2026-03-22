@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { Search, User, Menu, ChevronDown, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, User, Menu, ChevronDown, X, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -16,19 +16,37 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
+    DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import {
     Collapsible,
     CollapsibleContent,
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useState } from 'react';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function Header() {
+    const navigate = useNavigate();
+    const { isAuthenticated, user, logout } = useAuthStore();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchExpanded, setSearchExpanded] = useState(false);
     const [categoryOpen, setCategoryOpen] = useState(false);
     const [myShopOpen, setMyShopOpen] = useState(false);
+
+    const handleLogout = () => {
+        logout();
+        navigate('/signin');
+    };
+
+    // Get user initials for avatar
+    const getUserInitials = () => {
+        if (!user?.username) return 'U';
+        return user.username.substring(0, 2).toUpperCase();
+    };
+
     return (
         <header className="border-b bg-white dark:bg-gray-900 top-0 z-50 shadow-sm">
             {/* Desktop Header - Hidden on mobile */}
@@ -59,14 +77,52 @@ export default function Header() {
                         </div>
 
                         {/* Right Actions */}
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-2">
                             <ThemeToggle />
-                            <Link to="/signin">
-                                <Button className="bg-brand font-bold hover:bg-brand-hover dark:bg-brand-hover dark:hover:bg-brand">
-                                    <User />
-                                    Sign In
-                                </Button>
-                            </Link>
+                            {isAuthenticated ? (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="flex items-center gap-2 hover:bg-brand/10">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarFallback className="bg-brand text-white text-sm">
+                                                    {getUserInitials()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <span className="font-semibold text-brand2 dark:text-brand">
+                                                {user?.username}
+                                            </span>
+                                            <ChevronDown className="h-4 w-4 text-gray-500" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-56">
+                                        <DropdownMenuLabel>
+                                            <div className="flex flex-col space-y-1">
+                                                <p className="text-sm font-medium">{user?.username}</p>
+                                                <p className="text-xs text-gray-500">{user?.email}</p>
+                                            </div>
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/profile" className="cursor-pointer">
+                                                <User className="mr-2 h-4 w-4" />
+                                                Profile
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600">
+                                            <LogOut className="mr-2 h-4 w-4" />
+                                            Logout
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            ) : (
+                                <Link to="/signin">
+                                    <Button className="bg-brand font-bold hover:bg-brand-hover dark:bg-brand-hover dark:hover:bg-brand">
+                                        <User />
+                                        Sign In
+                                    </Button>
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -208,13 +264,48 @@ export default function Header() {
                                     <SheetTitle>Menu</SheetTitle>
                                 </SheetHeader>
                                 <div className="flex flex-col gap-4 mt-6">
-                                    {/* Sign In Button */}
-                                    <Link to="/signin" onClick={() => setMobileMenuOpen(false)}>
-                                        <Button className="w-full bg-brand text-lg hover:bg-brand-hover">
-                                            <User className="mr-2" />
-                                            Sign In
-                                        </Button>
-                                    </Link>
+                                    {/* User Section */}
+                                    {isAuthenticated ? (
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                                <Avatar className="h-10 w-10">
+                                                    <AvatarFallback className="bg-brand text-white">
+                                                        {getUserInitials()}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-semibold text-brand2 dark:text-brand truncate">
+                                                        {user?.username}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                                                </div>
+                                            </div>
+                                            <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
+                                                <Button variant="outline" className="w-full text-lg justify-start">
+                                                    <User className="mr-2 h-4 w-4" />
+                                                    Profile
+                                                </Button>
+                                            </Link>
+                                            <Button
+                                                variant="destructive"
+                                                className="w-full text-lg justify-start"
+                                                onClick={() => {
+                                                    handleLogout();
+                                                    setMobileMenuOpen(false);
+                                                }}
+                                            >
+                                                <LogOut className="mr-2 h-4 w-4" />
+                                                Logout
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <Link to="/signin" onClick={() => setMobileMenuOpen(false)}>
+                                            <Button className="w-full bg-brand text-lg hover:bg-brand-hover">
+                                                <User className="mr-2" />
+                                                Sign In
+                                            </Button>
+                                        </Link>
+                                    )}
 
                                     {/* Navigation Items */}
                                     <div className="flex flex-col gap-2">
@@ -269,7 +360,7 @@ export default function Header() {
                                             </CollapsibleTrigger>
                                             <CollapsibleContent className="mt-2 space-y-1">
                                                 <Link to="/myshop/selling" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                    My Selling Items 22
+                                                    My Selling Items
                                                 </Link>
                                                 <Link to="/myshop/bidding" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
                                                     My Bidding Items

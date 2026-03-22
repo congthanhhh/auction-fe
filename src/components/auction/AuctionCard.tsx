@@ -23,6 +23,8 @@ export default function AuctionCard({
     currentBid,
     bids,
     timeRemaining,
+    isBuyNow = false,
+    buyNowPrice,
 }: AuctionCardProps) {
     return (
         <Card className="overflow-hidden shadow-xs hover:shadow-md transition-all p-0 group rounded-none border-white dark:border-gray-700 gap-2">
@@ -64,12 +66,18 @@ export default function AuctionCard({
                     >
                         Quick bid
                     </Button>
-                    <Separator orientation="vertical" />
-                    <Button className='text-brand hover:text-brand-hover px-0'
-                        size="sm" variant="ghost"
-                    >
-                        Buy it now
-                    </Button>
+                    {isBuyNow && buyNowPrice && (
+                        <>
+                            <Separator orientation="vertical" />
+                            <Button
+                                className='text-brand hover:text-brand-hover px-0'
+                                size="sm"
+                                variant="ghost"
+                            >
+                                Buy it now
+                            </Button>
+                        </>
+                    )}
                 </div>
 
             </CardContent>

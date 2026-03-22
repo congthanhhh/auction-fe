@@ -1,67 +1,60 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import AuctionCard from '@/components/auction/AuctionCard';
 import { ArrowRight, Shirt, Monitor, Palette, Star, Home as HomeIcon, Music, Gamepad2, Truck, Zap, Clock } from 'lucide-react';
+import { auctionService } from '@/services/auctionService';
+import type { AuctionSessionResponse } from '@/types/auction';
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+// Extend dayjs with plugins
+dayjs.extend(duration);
+dayjs.extend(relativeTime);
+
+// Helper function to calculate time remaining
+function calculateTimeRemaining(endTime: string): string {
+    const now = dayjs();
+    const end = dayjs(endTime);
+    const diffMs = end.diff(now);
+
+    if (diffMs <= 0) return 'Ended';
+
+    const timeDuration = dayjs.duration(diffMs);
+    const days = Math.floor(timeDuration.asDays());
+    const hours = timeDuration.hours();
+    const minutes = timeDuration.minutes();
+
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+}
 
 export default function HomePage() {
-    // Mock data - sẽ thay bằng API call sau
-    const featuredItems = [
-        {
-            id: 1,
-            title: 'BEST PRICE IGI 1.52Ctw Diamonds (1.02Ct G/SI2 Center) 14KWG Ring Set',
-            image: '/src/assets/demo.jpg',
-            currentBid: 3133.00,
-            bids: 0,
-            timeRemaining: '2d 5h',
-            isBuyNow: true,
-            buyNowPrice: 3133.00,
-            hasOnecentShipping: true,
-        },
-        {
-            id: 2,
-            title: '14K Gold With Freshwater Pearl Vintage Ring (3.3g)',
-            image: 'https://placehold.co/400x300/fff3e0/f57c00?text=Pearl+Ring',
-            currentBid: 71.00,
-            bids: 15,
-            timeRemaining: '1d 8h',
-        },
-        {
-            id: 3,
-            title: 'Pad & Quill black and brown leather Messenger Laptop Satchel Travel Bag',
-            image: 'https://placehold.co/400x300/efebe9/5d4037?text=Leather+Bag',
-            currentBid: 12.99,
-            bids: 1,
-            timeRemaining: '3d 8h',
-            hasOnecentShipping: true,
-        },
-        {
-            id: 4,
-            title: 'Vintage Ever-Swiss WORKING 17 Jewels Shock Resistant Pocket Watch',
-            image: 'https://placehold.co/400x300/fce4ec/c2185b?text=Pocket+Watch',
-            currentBid: 37.00,
-            bids: 15,
-            timeRemaining: '7h 32m',
-        },
-        {
-            id: 5,
-            title: '24lb Untested Jewelry Grab Box',
-            image: 'https://placehold.co/400x300/f3e5f5/7b1fa2?text=Jewelry+Box',
-            currentBid: 369.00,
-            bids: 12,
-            timeRemaining: '1d 8h',
-        },
-        {
-            id: 6,
-            title: '10 Piece Set of Marked Dirigold Regal Pattern Flatware Cutlery (14.7oz)',
-            image: 'https://placehold.co/400x300/e8f5e9/388e3c?text=Flatware+Set',
-            currentBid: 12.99,
-            bids: 0,
-            timeRemaining: '8h 6m',
-            hasOnecentShipping: true,
-        },
-    ];
+    const [featuredItems, setFeaturedItems] = useState<AuctionSessionResponse[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchActiveAuctions = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await auctionService.getActiveAuctionSessionsDesc(1, 8);
+                setFeaturedItems(response.data ?? []);
+            } catch (err) {
+                console.error('Failed to fetch active auctions:', err);
+                setError('Failed to load auction items. Please try again later.');
+                setFeaturedItems([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchActiveAuctions();
+    }, []);
 
     const categories = [
         { name: 'Clothing', icon: Shirt, link: '/categories/clothing' },
@@ -103,11 +96,40 @@ export default function HomePage() {
                     </Link>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {featuredItems.map((item) => (
-                        <AuctionCard key={item.id} {...item} />
-                    ))}
-                </div>
+                {loading ? (
+                    <div className="text-center py-12">
+                        <p className="text-gray-500 dark:text-gray-400">Loading auction items...</p>
+                    </div>
+                ) : error ? (
+                    <div className="text-center py-12">
+                        <p className="text-red-500 dark:text-red-400">{error}</p>
+                    </div>
+                ) : featuredItems.length === 0 ? (
+                    <div className="text-center py-12">
+                        <p className="text-gray-500 dark:text-gray-400">No active auctions available at the moment.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {featuredItems.map((auction) => {
+                            const hasBids = auction.currentPrice > auction.startPrice || auction.highestBidder !== null;
+                            const bidCount = hasBids ? 1 : 0; // Backend should provide actual bid count
+
+                            return (
+                                <AuctionCard
+                                    key={auction.id}
+                                    id={auction.id}
+                                    title={auction.product.name}
+                                    image={auction.product.images[0]?.url || 'https://placehold.co/400x300/e0e0e0/666?text=No+Image'}
+                                    currentBid={auction.currentPrice}
+                                    bids={bidCount}
+                                    timeRemaining={calculateTimeRemaining(auction.endTime)}
+                                    isBuyNow={!!auction.buyNowPrice && !hasBids}
+                                    buyNowPrice={auction.buyNowPrice || undefined}
+                                />
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {/* Shop Top Categories - giống shopgoodwill */}
@@ -212,11 +234,32 @@ export default function HomePage() {
                         </Link>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {featuredItems.slice(0, 4).map((item) => (
-                            <AuctionCard key={item.id} {...item} />
-                        ))}
-                    </div>
+                    {loading ? (
+                        <div className="text-center py-12">
+                            <p className="text-gray-500 dark:text-gray-400">Loading recommendations...</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {featuredItems.slice(0, 4).map((auction) => {
+                                const hasBids = auction.currentPrice > auction.startPrice || auction.highestBidder !== null;
+                                const bidCount = hasBids ? 1 : 0;
+
+                                return (
+                                    <AuctionCard
+                                        key={auction.id}
+                                        id={auction.id}
+                                        title={auction.product.name}
+                                        image={auction.product.images[0]?.url || 'https://placehold.co/400x300/e0e0e0/666?text=No+Image'}
+                                        currentBid={auction.currentPrice}
+                                        bids={bidCount}
+                                        timeRemaining={calculateTimeRemaining(auction.endTime)}
+                                        isBuyNow={!!auction.buyNowPrice && !hasBids}
+                                        buyNowPrice={auction.buyNowPrice || undefined}
+                                    />
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

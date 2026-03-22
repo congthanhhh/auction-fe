@@ -1,25 +1,75 @@
-import { Link } from "react-router-dom"
-import { useState } from "react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
-import { Eye, EyeOff, } from "lucide-react"
+import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react"
 import { ForgotPasswordDialog } from "@/components/auth"
+import { useAuthStore } from "@/stores/authStore"
+import type { AuthenticationRequest } from "@/types/auth"
 
 export const SignIn = () => {
-    const [email, setEmail] = useState("")
+    const navigate = useNavigate()
+    const location = useLocation()
+    const { login, redirectToGoogleLogin, isLoading, error, clearError, isAuthenticated, setError } = useAuthStore()
+
+    const [usernameOrEmail, setUsernameOrEmail] = useState("")
     const [password, setPassword] = useState("")
     const [rememberMe, setRememberMe] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false)
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // Redirect nếu đã đăng nhập
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/')
+        }
+    }, [isAuthenticated, navigate])
+
+    // Clear error khi component unmount
+    useEffect(() => {
+        return () => {
+            clearError()
+        }
+    }, [clearError])
+
+    useEffect(() => {
+        const oauthError = (location.state as { oauthError?: string } | null)?.oauthError
+        if (oauthError) {
+            setError(oauthError)
+            navigate(location.pathname, { replace: true, state: null })
+        }
+    }, [location.state, location.pathname, navigate, setError])
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        // Handle sign in logic here
-        console.log({ email, password, rememberMe })
+        clearError()
+
+        // Validate input
+        if (!usernameOrEmail.trim() || !password.trim()) {
+            return
+        }
+
+        try {
+            // Xác định input là email hay username
+            const isEmail = usernameOrEmail.includes('@')
+
+            const credentials: AuthenticationRequest = {
+                password,
+                ...(isEmail ? { email: usernameOrEmail } : { username: usernameOrEmail })
+            }
+
+            await login(credentials)
+
+            // Đăng nhập thành công, redirect sẽ được xử lý bởi useEffect
+            console.log('Đăng nhập thành công!')
+        } catch (err) {
+            // Error đã được xử lý trong store
+            console.error('Login error:', err)
+        }
     }
 
     return (
@@ -44,14 +94,25 @@ export const SignIn = () => {
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* Error Message */}
+                            {error && (
+                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3 flex items-start gap-2">
+                                    <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                                    <div className="text-sm text-red-800 dark:text-red-200">
+                                        {error}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-2 text-brand2">
-                                <Label htmlFor="email">Username</Label>
+                                <Label htmlFor="usernameOrEmail">Username hoặc Email</Label>
                                 <Input
-                                    id="email"
+                                    id="usernameOrEmail"
                                     type="text"
                                     placeholder="username hoặc email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    value={usernameOrEmail}
+                                    onChange={(e) => setUsernameOrEmail(e.target.value)}
+                                    disabled={isLoading}
                                     required
                                 />
                             </div>
@@ -62,6 +123,7 @@ export const SignIn = () => {
                                         type="button"
                                         onClick={() => setForgotPasswordOpen(true)}
                                         className="text-sm text-brand hover:text-brand-hover hover:underline"
+                                        disabled={isLoading}
                                     >
                                         Quên mật khẩu?
                                     </button>
@@ -73,6 +135,7 @@ export const SignIn = () => {
                                         placeholder="••••••••"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
+                                        disabled={isLoading}
                                         required
                                         className="pr-10"
                                     />
@@ -82,6 +145,7 @@ export const SignIn = () => {
                                         size="icon"
                                         className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                                         onClick={() => setShowPassword(!showPassword)}
+                                        disabled={isLoading}
                                     >
                                         {showPassword ? (
                                             <EyeOff className="h-4 w-4 text-gray-500" />
@@ -96,6 +160,7 @@ export const SignIn = () => {
                                     id="remember"
                                     checked={rememberMe}
                                     onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                                    disabled={isLoading}
                                 />
                                 <Label
                                     htmlFor="remember"
@@ -107,8 +172,16 @@ export const SignIn = () => {
                             <Button
                                 type="submit"
                                 className="w-full bg-brand hover:bg-brand-hover"
+                                disabled={isLoading}
                             >
-                                Đăng nhập
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Đang đăng nhập...
+                                    </>
+                                ) : (
+                                    'Đăng nhập'
+                                )}
                             </Button>
                         </form>
 
@@ -124,6 +197,8 @@ export const SignIn = () => {
                                 variant="outline"
                                 className="w-full text-brand2"
                                 type="button"
+                                onClick={redirectToGoogleLogin}
+                                disabled={isLoading}
                             >
                                 <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                                     <path
