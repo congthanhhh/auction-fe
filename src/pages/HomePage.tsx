@@ -6,31 +6,7 @@ import AuctionCard from '@/components/auction/AuctionCard';
 import { ArrowRight, Shirt, Monitor, Palette, Star, Home as HomeIcon, Music, Gamepad2, Truck, Zap, Clock } from 'lucide-react';
 import { auctionService } from '@/services/auctionService';
 import type { AuctionSessionResponse } from '@/types/auction';
-import dayjs from 'dayjs';
-import duration from 'dayjs/plugin/duration';
-import relativeTime from 'dayjs/plugin/relativeTime';
-
-// Extend dayjs with plugins
-dayjs.extend(duration);
-dayjs.extend(relativeTime);
-
-// Helper function to calculate time remaining
-function calculateTimeRemaining(endTime: string): string {
-    const now = dayjs();
-    const end = dayjs(endTime);
-    const diffMs = end.diff(now);
-
-    if (diffMs <= 0) return 'Ended';
-
-    const timeDuration = dayjs.duration(diffMs);
-    const days = Math.floor(timeDuration.asDays());
-    const hours = timeDuration.hours();
-    const minutes = timeDuration.minutes();
-
-    if (days > 0) return `${days}d ${hours}h`;
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
-}
+import { calculateTimeRemaining } from '@/lib/utils';
 
 export default function HomePage() {
     const [featuredItems, setFeaturedItems] = useState<AuctionSessionResponse[]>([]);
