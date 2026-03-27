@@ -95,7 +95,7 @@ export default function HomePage() {
                                     key={auction.id}
                                     id={auction.id}
                                     title={auction.product.name}
-                                    image={auction.product.images[0]?.url || 'https://placehold.co/400x300/e0e0e0/666?text=No+Image'}
+                                    image={auction.product.images[0]?.url || "https://picsum.photos/200"}
                                     currentBid={auction.currentPrice}
                                     bids={bidCount}
                                     timeRemaining={calculateTimeRemaining(auction.endTime)}

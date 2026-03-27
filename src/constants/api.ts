@@ -15,7 +15,9 @@ export const API_ENDPOINTS = {
   // Auction
   AUCTION: {
     LIST: '/auctions',
-    DETAIL: (id: string) => `/auctions/${id}`,
+    DETAIL: (id: string) => `/auction-sessions/${id}`,
+    BIDS: (sessionId: number) => `/auction-sessions/${sessionId}/bids`,
+    BID_COUNT: (productId: number) => `/auction-sessions/count/${productId}`,
     FEATURED: '/auctions/featured',
     RECOMMENDED: '/auctions/recommended',
     BID: (id: string) => `/auctions/${id}/bid`,

@@ -10,6 +10,7 @@ import { SignIn } from './pages/SignIn';
 import { SignUp } from './pages/SignUp';
 import { GoogleAuthCallback } from './pages/GoogleAuthCallback';
 import { useAuthStore } from './stores/authStore';
+import Detail from './components/auction/Detail';
 
 function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
@@ -29,6 +30,7 @@ function App() {
             <Route path="profile" element={<Profile />} />
             <Route path="view-all-featured" element={<ViewAll />} />
             <Route path="view-all-recommended" element={<Recommended />} />
+            <Route path="auction/:id" element={<Detail />} />
           </Route>
 
           {/* Routes without MainLayout */}

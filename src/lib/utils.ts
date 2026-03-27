@@ -27,3 +27,22 @@ export function calculateTimeRemaining(endTime: string): string {
   if (hours > 0) return `${hours}h ${minutes}m`
   return `${minutes}m`
 }
+
+// Shared number & currency formatting helpers
+const numberFormatter = new Intl.NumberFormat('vi-VN')
+
+const currencyFormatter = new Intl.NumberFormat('vi-VN', {
+  style: 'currency',
+  currency: 'VND',
+  maximumFractionDigits: 0,
+})
+
+export function formatNumber(value?: number | null): string {
+  if (typeof value !== 'number' || Number.isNaN(value)) return '0'
+  return numberFormatter.format(value)
+}
+
+export function formatCurrency(amount?: number | null): string {
+  if (typeof amount !== 'number' || Number.isNaN(amount)) return '0 ₫'
+  return currencyFormatter.format(amount)
+}

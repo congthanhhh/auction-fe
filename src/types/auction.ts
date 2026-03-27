@@ -84,3 +84,21 @@ export interface AuctionApiError {
     message: string;
     status: number;
 }
+
+export interface BidRequest {
+    amount: number;
+}
+
+export interface BidResponse {
+    id: number;
+    displayedAmount: number;
+    bidTime: string; // LocalDateTime
+    user: SimpleUserResponse;
+    auctionSessionId: number;
+}
+
+export interface PriceUpdateData {
+    currentPrice: number;
+    highestBidder: SimpleUserResponse;
+    reservePriceMet: boolean;
+}
