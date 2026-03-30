@@ -31,13 +31,10 @@ export const API_ENDPOINTS = {
 } as const;
 
 export const GOOGLE_OAUTH_CONFIG = {
-  CLIENT_ID:
-    import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-    '285017198166-v3bg04pi6vb53fve3homa4o6le3taskd.apps.googleusercontent.com',
+  CLIENT_ID: '285017198166-v3bg04pi6vb53fve3homa4o6le3taskd.apps.googleusercontent.com',
   REDIRECT_URI:
     import.meta.env.VITE_GOOGLE_REDIRECT_URI || 'http://localhost:5173/authenticate',
-  AUTH_URL:
-    import.meta.env.VITE_GOOGLE_AUTH_URL || 'https://accounts.google.com/o/oauth2/v2/auth',
+  AUTH_URL: 'https://accounts.google.com/o/oauth2/v2/auth',
   RESPONSE_TYPE: 'code',
   SCOPE: 'openid email profile',
 } as const;
