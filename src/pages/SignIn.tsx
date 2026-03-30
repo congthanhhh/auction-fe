@@ -83,6 +83,21 @@ export const SignIn = () => {
                 </div>
             </div>
 
+            {/* Test account info */}
+            <div className="mt-2 flex justify-center">
+                <Card className="border p-2 border-dashed border-brand/40 bg-brand/5 dark:bg-brand/10">
+                    <CardContent className="flex text-sm">
+                        <div>
+                            <p className="font-mono text-brand2">usera:</p>
+                            <p className="font-mono text-brand2">userb:</p>
+                        </div>
+                        <div>
+                            <p className="font-mono text-brand2 pl-1">123456</p>
+                            <p className="font-mono text-brand2 pl-1">123456</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
             {/* Main Content */}
             <div className="flex-1 flex items-center justify-center p-4">
                 <Card className="w-full max-w-md">
