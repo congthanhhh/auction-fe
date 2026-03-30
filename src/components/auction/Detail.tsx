@@ -66,8 +66,7 @@ export default function Detail() {
     useEffect(() => {
         if (id) {
             fetchAuctionDetail(id);
-
-            const socket = socketService.connect();
+            socketService.connect();
             const roomName = `session-${id}`;
             socketService.joinRoom(roomName);
 
