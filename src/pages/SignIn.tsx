@@ -25,9 +25,11 @@ export const SignIn = () => {
     // Redirect nếu đã đăng nhập
     useEffect(() => {
         if (isAuthenticated) {
-            navigate('/')
+            const searchParams = new URLSearchParams(location.search)
+            const redirectTo = searchParams.get('redirectTo') || '/'
+            navigate(redirectTo, { replace: true })
         }
-    }, [isAuthenticated, navigate])
+    }, [isAuthenticated, navigate, location.search])
 
     // Clear error khi component unmount
     useEffect(() => {

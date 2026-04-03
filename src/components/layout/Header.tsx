@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, User, Menu, ChevronDown, X, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,11 +30,22 @@ import { useAuthStore } from '@/stores/authStore';
 
 export default function Header() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { isAuthenticated, user, logout } = useAuthStore();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchExpanded, setSearchExpanded] = useState(false);
     const [categoryOpen, setCategoryOpen] = useState(false);
     const [myShopOpen, setMyShopOpen] = useState(false);
+
+    const buildSignInLink = () => {
+        if (location.pathname === '/signin') return '/signin';
+        const currentPath = location.pathname + location.search + location.hash;
+        const params = new URLSearchParams();
+        params.set('redirectTo', currentPath);
+        return `/signin?${params.toString()}`;
+    };
+
+    const signInHref = buildSignInLink();
 
     const handleLogout = () => {
         logout();
@@ -116,7 +127,7 @@ export default function Header() {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             ) : (
-                                <Link to="/signin">
+                                <Link to={signInHref}>
                                     <Button className="bg-brand font-bold hover:bg-brand-hover dark:bg-brand-hover dark:hover:bg-brand">
                                         <User />
                                         Sign In
@@ -299,7 +310,7 @@ export default function Header() {
                                             </Button>
                                         </div>
                                     ) : (
-                                        <Link to="/signin" onClick={() => setMobileMenuOpen(false)}>
+                                        <Link to={signInHref} onClick={() => setMobileMenuOpen(false)}>
                                             <Button className="w-full bg-brand text-lg hover:bg-brand-hover">
                                                 <User className="mr-2" />
                                                 Sign In

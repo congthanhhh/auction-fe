@@ -153,9 +153,18 @@ api.interceptors.response.use(
         // Refresh token thất bại, logout user
         authService.logout();
 
-        // Redirect đến trang login
+        // Redirect đến trang login và lưu lại URL hiện tại để quay lại sau khi đăng nhập
         if (typeof window !== 'undefined') {
-          window.location.href = '/signin';
+          const currentPath = window.location.pathname + window.location.search + window.location.hash;
+
+          // Tránh vòng lặp nếu đã ở trang signin
+          if (window.location.pathname === '/signin') {
+            window.location.href = '/signin';
+          } else {
+            const params = new URLSearchParams();
+            params.set('redirectTo', currentPath);
+            window.location.href = `/signin?${params.toString()}`;
+          }
         }
 
         return Promise.reject(refreshError);

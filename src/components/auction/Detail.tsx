@@ -12,6 +12,7 @@ import { format, differenceInDays, differenceInHours, differenceInMinutes, isBef
 import { socketService } from "@/services/socketService";
 import type { BidResponse, PriceUpdateData } from "@/types/auction";
 import { formatCurrency } from "@/lib/utils";
+import { useRequireAuth } from "@/hooks/use-require-auth";
 
 const calculateTimeLeft = (endTime: string) => {
     const now = new Date();
@@ -50,6 +51,7 @@ const parseBidTime = (raw: unknown): Date | null => {
 
 export default function Detail() {
     const { id } = useParams<{ id: string }>();
+    const requireAuth = useRequireAuth();
     const {
         auction,
         isLoading,
@@ -94,9 +96,14 @@ export default function Detail() {
     const [maxBid, setMaxBid] = useState("");
 
     const handlePlaceBid = () => {
-        if (id && maxBid) {
-            placeBid(parseInt(id, 10), parseFloat(maxBid));
-        }
+        if (!id) return;
+
+        const isAllowed = requireAuth();
+        if (!isAllowed) return;
+
+        if (!maxBid) return;
+
+        placeBid(parseInt(id, 10), parseFloat(maxBid));
     };
 
     if (isLoading) {
@@ -111,7 +118,7 @@ export default function Detail() {
         return <div>No auction data found.</div>;
     }
 
-    const { product, startTime, endTime, currentPrice, startPrice, buyNowPrice, reservePriceMet } = auction;
+    const { product, startTime, endTime, currentPrice, startPrice, buyNowPrice, reservePriceMet, myMaxBid } = auction;
     const images = product.images.length > 0 ? product.images.map(img => img.url) : ["https://picsum.photos/200"];
     const timeLeft = calculateTimeLeft(endTime);
 
@@ -221,12 +228,14 @@ export default function Detail() {
                                             className="w-40"
                                         />
                                     </div>
-                                    <p className="text-right text-xs text-red-500">
-                                        Please enter a Maximum Bid
-                                    </p>
+                                    {myMaxBid !== null && myMaxBid !== undefined && (
+                                        <p className="text-right text-xs text-muted-foreground">
+                                            Your current max bid: {formatCurrency(myMaxBid)}
+                                        </p>
+                                    )}
+
                                 </div>
                             </CardContent>
-
                             <CardFooter className="flex flex-col gap-3">
                                 <Button
                                     className="h-12 w-full bg-fuchsia-800 text-xl font-bold text-white hover:bg-fuchsia-700"
