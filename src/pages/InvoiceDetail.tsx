@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import InvoiceDetail from "@/components/invoice/Detail";
 import type { InvoiceResponse } from "@/types/invoice";
+import { addressService } from "@/services/addressService";
+import type { AddressResponse } from "@/types/user";
 
 interface LocationState {
     invoice?: InvoiceResponse;
@@ -11,6 +14,25 @@ export default function InvoiceDetailPage() {
     const location = useLocation();
     const state = location.state as LocationState | null;
     const invoice = state?.invoice;
+
+    const [defaultAddress, setDefaultAddress] = useState<AddressResponse | null>(null);
+
+    useEffect(() => {
+        const fetchDefaultAddress = async () => {
+            try {
+                const addresses = await addressService.getMyAddresses();
+                const foundDefault = addresses.find(addr => addr.isDefault);
+                if (foundDefault) {
+                    setDefaultAddress(foundDefault);
+                }
+            } catch (error) {
+                // eslint-disable-next-line no-console
+                console.error("Failed to load default address for invoice detail:", error);
+            }
+        };
+
+        fetchDefaultAddress();
+    }, []);
 
     const handlePay = (method: "COD" | "VNPAY") => {
         if (!invoice) return;
@@ -62,6 +84,7 @@ export default function InvoiceDetailPage() {
                     onPay={handlePay}
                     isPaying={false}
                     onViewAuction={handleViewAuction}
+                    defaultAddress={defaultAddress ?? undefined}
                 />
             </div>
         </div>

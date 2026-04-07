@@ -216,26 +216,36 @@ export default function Header() {
                                         <ChevronDown className="h-4 w-4" />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-72 h-96" align="start">
+                                <DropdownMenuContent className="w-72" align="start">
                                     <ScrollArea className="h-72">
                                         <DropdownMenuItem asChild>
                                             <Link to="/myshop/selling" className="px-4 py-2 text-xl cursor-pointer">
-                                                My Selling Items
+                                                Personal Information
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
                                             <Link to="/myshop/bidding" className="px-4 py-2 text-xl cursor-pointer">
-                                                My Bidding Items
+                                                Open orders
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
                                             <Link to="/myshop/watchlist" className="px-4 py-2 text-xl cursor-pointer">
-                                                My Watchlist
+                                                Auction inprogress
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
                                             <Link to="/myshop/won" className="px-4 py-2 text-xl cursor-pointer">
-                                                Items Won
+                                                Closed auctions
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/myshop/won" className="px-4 py-2 text-xl cursor-pointer">
+                                                Personal Shopper
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/myshop/won" className="px-4 py-2 text-xl cursor-pointer">
+                                                Favorites
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>

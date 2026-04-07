@@ -6,18 +6,29 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
 import { invoiceStatusLabels, invoiceStatusVariants, invoiceTypeLabels } from "@/types/invoice-labels";
+import type { AddressResponse } from "@/types/user";
 
 interface InvoiceDetailProps {
     invoice: InvoiceResponse;
     onPay?: (method: "COD" | "VNPAY") => void;
     isPaying?: boolean;
     onViewAuction?: (auctionSessionId: number) => void;
+    defaultAddress?: AddressResponse;
 }
 
-export default function InvoiceDetail({ invoice, onPay, isPaying, onViewAuction }: InvoiceDetailProps) {
+export default function InvoiceDetail({ invoice, onPay, isPaying, onViewAuction, defaultAddress }: InvoiceDetailProps) {
     const firstImage = invoice.product.images[0]?.url;
 
     const canPay = invoice.status === "PENDING";
+
+    const shippingRecipientName = defaultAddress?.recipientName || invoice.recipientName;
+    const shippingPhone = defaultAddress?.phoneNumber || invoice.recipientPhone;
+    const shippingAddress = defaultAddress
+        ? defaultAddress.fullAddress ||
+        [defaultAddress.street, defaultAddress.ward, defaultAddress.district, defaultAddress.city]
+            .filter(Boolean)
+            .join(", ")
+        : invoice.shippingAddress;
 
     return (
         <div className="space-y-4">
@@ -111,10 +122,10 @@ export default function InvoiceDetail({ invoice, onPay, isPaying, onViewAuction 
                         <div className="space-y-4 text-sm">
                             <div className="space-y-1">
                                 <h3 className="text-sm font-semibold text-foreground">Thông tin nhận hàng</h3>
-                                <p className="text-sm font-medium">{invoice.recipientName}</p>
-                                <p className="text-xs text-muted-foreground">SĐT: {invoice.recipientPhone}</p>
+                                <p className="text-sm font-medium">{shippingRecipientName}</p>
+                                <p className="text-xs text-muted-foreground">SĐT: {shippingPhone}</p>
                                 <p className="text-xs text-muted-foreground whitespace-pre-line">
-                                    {invoice.shippingAddress}
+                                    {shippingAddress}
                                 </p>
                             </div>
 
