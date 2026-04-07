@@ -25,8 +25,15 @@ export const API_ENDPOINTS = {
   },
   // User
   USER: {
-    PROFILE: '/user/profile',
-    UPDATE_PROFILE: '/user/profile',
+    MY_PROFILE: '/users/my-profile',
+    UPDATE_MY_INFO: '/users/update-my-info',
+    CHANGE_PASSWORD: '/users/change-password',
+  },
+  // Address
+  ADDRESS: {
+    ROOT: '/address',
+    BY_ID: (id: number) => `/address/${id}`,
+    SET_DEFAULT: (id: number) => `/address/${id}/default`,
   },
 } as const;
 
