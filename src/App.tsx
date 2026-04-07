@@ -3,6 +3,8 @@ import { useEffect } from 'react';
 import MainLayout from './components/layout/MainLayout';
 import HomePage from './pages/HomePage';
 import Profile from './pages/Profile';
+import MyInvoices from './pages/MyInvoices';
+import InvoiceDetailPage from './pages/InvoiceDetail';
 import ViewAll from './components/auction/ViewAll';
 import Recommended from './components/auction/Recommended';
 import { ThemeProvider } from './components/theme-provider';
@@ -28,6 +30,8 @@ function App() {
           <Route path="/" element={<MainLayout />}>
             <Route index element={<HomePage />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="my-invoices" element={<MyInvoices />} />
+            <Route path="my-invoices/:id" element={<InvoiceDetailPage />} />
             <Route path="view-all-featured" element={<ViewAll />} />
             <Route path="view-all-recommended" element={<Recommended />} />
             <Route path="auction/:id" element={<Detail />} />

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -6,8 +6,14 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Eye, EyeOff, } from "lucide-react"
+import { useAuthStore } from "@/stores/authStore"
+import { OTPDialog } from "@/components/auth"
+import { authService } from "@/services/authService"
+import type { UserCreationRequest } from "@/types/auth"
 
 export const SignUp = () => {
+    const navigate = useNavigate()
+    const { redirectToGoogleLogin } = useAuthStore()
     const [username, setUsername] = useState("")
     const [firstName, setFirstName] = useState("")
     const [lastName, setLastName] = useState("")
@@ -15,11 +21,48 @@ export const SignUp = () => {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [showPassword, setShowPassword] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [infoMessage, setInfoMessage] = useState<string | null>(null)
+    const [otpDialogOpen, setOtpDialogOpen] = useState(false)
+    const [lastSignUpPayload, setLastSignUpPayload] = useState<UserCreationRequest | null>(null)
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        // Handle sign up logic here
-        console.log({ username, firstName, lastName, phone, email, password })
+        setError(null)
+        setInfoMessage(null)
+
+        const payload: UserCreationRequest = {
+            username: username.trim(),
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            password,
+            email: email.trim(),
+            phoneNumber: phone.trim(),
+        }
+
+        try {
+            setIsSubmitting(true)
+            const response = await authService.createUserOtp(payload)
+            setLastSignUpPayload(payload)
+            setInfoMessage(response.message || "Đã gửi mã OTP tới email của bạn")
+            setOtpDialogOpen(true)
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Đăng ký tài khoản thất bại"
+            setError(message)
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const handleOtpVerified = () => {
+        navigate("/signin")
+    }
+
+    const handleResendOtp = async () => {
+        if (!lastSignUpPayload) return
+        const response = await authService.createUserOtp(lastSignUpPayload)
+        setInfoMessage(response.message || "Đã gửi lại mã OTP tới email của bạn")
     }
 
     return (
@@ -44,6 +87,12 @@ export const SignUp = () => {
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
+                            {error && (
+                                <p className="text-sm text-red-600">{error}</p>
+                            )}
+                            {infoMessage && !error && (
+                                <p className="text-sm text-green-600">{infoMessage}</p>
+                            )}
                             {/* Username */}
                             <div className="space-y-2">
                                 <Label htmlFor="username">Tên đăng nhập <span className="text-red-500">*</span></Label>
@@ -140,8 +189,9 @@ export const SignUp = () => {
                             <Button
                                 type="submit"
                                 className="w-full bg-brand hover:bg-brand-hover"
+                                disabled={isSubmitting}
                             >
-                                Đăng ký
+                                {isSubmitting ? "Đang đăng ký..." : "Đăng ký"}
                             </Button>
                         </form>
 
@@ -157,6 +207,7 @@ export const SignUp = () => {
                                 variant="outline"
                                 className="w-full"
                                 type="button"
+                                onClick={redirectToGoogleLogin}
                             >
                                 <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                                     <path
@@ -201,6 +252,14 @@ export const SignUp = () => {
                     © 2026 Auction Shop Online. All rights reserved.
                 </div>
             </div>
+
+            <OTPDialog
+                open={otpDialogOpen}
+                onOpenChange={setOtpDialogOpen}
+                email={email}
+                onVerified={handleOtpVerified}
+                onResendOtp={lastSignUpPayload ? handleResendOtp : undefined}
+            />
         </div>
     )
 }

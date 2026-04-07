@@ -26,6 +26,24 @@ export interface ApiErrorResponse {
     status: number;
 }
 
+// Sign up & OTP verification
+export interface UserCreationRequest {
+    username: string;
+    firstName: string;
+    lastName: string;
+    password: string;
+    email: string;
+    phoneNumber: string;
+    // Backend has defaults for these; frontend usually does not need to send
+    isActive?: boolean;
+    createdAt?: string;
+}
+
+export interface OtpVerificationRequest {
+    email: string;
+    otp: string;
+}
+
 // JWT Payload interface (nếu cần decode token)
 export interface JWTPayload {
     sub: string; // subject (thường là userId hoặc username)

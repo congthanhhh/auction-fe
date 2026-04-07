@@ -239,7 +239,7 @@ export default function Header() {
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
-                                            <Link to="/myshop/orders" className="px-4 py-2 text-xl cursor-pointer">
+                                            <Link to="/my-invoices" className="px-4 py-2 text-xl cursor-pointer">
                                                 My Orders
                                             </Link>
                                         </DropdownMenuItem>

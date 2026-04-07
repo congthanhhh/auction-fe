@@ -6,7 +6,10 @@ import type {
     AuthenticationResponse,
     ApiErrorResponse,
     GoogleAuthRequest,
+    UserCreationRequest,
+    OtpVerificationRequest,
 } from '@/types/auth';
+import type { MessageResponse } from '@/types/user';
 
 class AuthService {
 
@@ -23,6 +26,29 @@ class AuthService {
 
     redirectToGoogleLogin(): void {
         window.location.href = this.getGoogleAuthUrl();
+    }
+
+    async createUserOtp(payload: UserCreationRequest): Promise<MessageResponse> {
+        try {
+            const response = await axios.post<MessageResponse>(
+                `${API_BASE_URL}${API_ENDPOINTS.USER.CREATE_OTP}`,
+                payload,
+                {
+                    withCredentials: true,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response) {
+                const apiError = error.response.data as ApiErrorResponse;
+                throw new Error(apiError.message || 'Đăng ký tài khoản thất bại');
+            }
+            throw new Error('Không thể kết nối đến server');
+        }
     }
 
     async login(credentials: AuthenticationRequest): Promise<AuthenticationResponse> {
@@ -43,6 +69,29 @@ class AuthService {
             if (axios.isAxiosError(error) && error.response) {
                 const apiError = error.response.data as ApiErrorResponse;
                 throw new Error(apiError.message || 'Đăng nhập thất bại');
+            }
+            throw new Error('Không thể kết nối đến server');
+        }
+    }
+
+    async verifyOtp(payload: OtpVerificationRequest): Promise<MessageResponse> {
+        try {
+            const response = await axios.post<MessageResponse>(
+                `${API_BASE_URL}${API_ENDPOINTS.AUTH.VERIFY_OTP}`,
+                payload,
+                {
+                    withCredentials: true,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response) {
+                const apiError = error.response.data as ApiErrorResponse;
+                throw new Error(apiError.message || 'Xác thực OTP thất bại');
             }
             throw new Error('Không thể kết nối đến server');
         }

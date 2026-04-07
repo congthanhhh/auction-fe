@@ -28,12 +28,17 @@ export const API_ENDPOINTS = {
     MY_PROFILE: '/users/my-profile',
     UPDATE_MY_INFO: '/users/update-my-info',
     CHANGE_PASSWORD: '/users/change-password',
+    CREATE_OTP: '/users/otp',
   },
   // Address
   ADDRESS: {
     ROOT: '/address',
     BY_ID: (id: number) => `/address/${id}`,
     SET_DEFAULT: (id: number) => `/address/${id}/default`,
+  },
+  // Invoice
+  INVOICE: {
+    MY_INVOICES: '/invoices/my-invoices',
   },
 } as const;
 
