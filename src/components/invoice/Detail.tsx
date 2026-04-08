@@ -7,25 +7,38 @@ import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
 import { invoiceStatusLabels, invoiceStatusVariants, invoiceTypeLabels } from "@/types/invoice-labels";
 import type { AddressResponse } from "@/types/user";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface InvoiceDetailProps {
     invoice: InvoiceResponse;
-    onPay?: (method: "COD" | "VNPAY") => void;
+    onPay?: (method: "VNPAY") => void;
     isPaying?: boolean;
     onViewAuction?: (auctionSessionId: number) => void;
-    defaultAddress?: AddressResponse;
+    selectedAddress?: AddressResponse;
+    addresses?: AddressResponse[];
+    onChangeAddress?: (addressId: number) => void;
 }
 
-export default function InvoiceDetail({ invoice, onPay, isPaying, onViewAuction, defaultAddress }: InvoiceDetailProps) {
+export default function InvoiceDetail({
+    invoice,
+    onPay,
+    isPaying,
+    onViewAuction,
+    selectedAddress,
+    addresses,
+    onChangeAddress,
+}: InvoiceDetailProps) {
     const firstImage = invoice.product.images[0]?.url;
 
     const canPay = invoice.status === "PENDING";
 
-    const shippingRecipientName = defaultAddress?.recipientName || invoice.recipientName;
-    const shippingPhone = defaultAddress?.phoneNumber || invoice.recipientPhone;
-    const shippingAddress = defaultAddress
-        ? defaultAddress.fullAddress ||
-        [defaultAddress.street, defaultAddress.ward, defaultAddress.district, defaultAddress.city]
+    const effectiveAddress = selectedAddress ?? null;
+
+    const shippingRecipientName = effectiveAddress?.recipientName || invoice.recipientName;
+    const shippingPhone = effectiveAddress?.phoneNumber || invoice.recipientPhone;
+    const shippingAddress = effectiveAddress
+        ? effectiveAddress.fullAddress ||
+        [effectiveAddress.street, effectiveAddress.ward, effectiveAddress.district, effectiveAddress.city]
             .filter(Boolean)
             .join(", ")
         : invoice.shippingAddress;
@@ -121,7 +134,29 @@ export default function InvoiceDetail({ invoice, onPay, isPaying, onViewAuction,
                         {/* Thông tin giao hàng & thanh toán */}
                         <div className="space-y-4 text-sm">
                             <div className="space-y-1">
-                                <h3 className="text-sm font-semibold text-foreground">Thông tin nhận hàng</h3>
+                                <div className="flex items-center justify-between gap-2">
+                                    <h3 className="text-sm font-semibold text-foreground">Thông tin nhận hàng</h3>
+                                    {addresses && addresses.length > 0 && onChangeAddress && (
+                                        <Select
+                                            value={effectiveAddress ? String(effectiveAddress.id) : ""}
+                                            onValueChange={(value) => onChangeAddress(Number(value))}
+                                        >
+                                            <SelectTrigger size="sm" className="min-w-[200px] text-xs">
+                                                <SelectValue placeholder="Chọn địa chỉ nhận hàng" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {addresses.map((addr) => (
+                                                    <SelectItem key={addr.id} value={String(addr.id)}>
+                                                        <span className="text-xs font-medium">
+                                                            {addr.recipientName}
+                                                            {addr.isDefault && " (Mặc định)"}
+                                                        </span>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                </div>
                                 <p className="text-sm font-medium">{shippingRecipientName}</p>
                                 <p className="text-xs text-muted-foreground">SĐT: {shippingPhone}</p>
                                 <p className="text-xs text-muted-foreground whitespace-pre-line">
@@ -162,21 +197,11 @@ export default function InvoiceDetail({ invoice, onPay, isPaying, onViewAuction,
                                             <Button
                                                 type="button"
                                                 size="sm"
-                                                variant="outline"
-                                                className="flex-1"
-                                                disabled={isPaying}
-                                                onClick={() => onPay?.("COD")}
-                                            >
-                                                {isPaying ? "Đang xử lý..." : "Thanh toán khi nhận hàng"}
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                size="sm"
                                                 className="flex-1 bg-brand text-white"
                                                 disabled={isPaying}
                                                 onClick={() => onPay?.("VNPAY")}
                                             >
-                                                {isPaying ? "Đang xử lý..." : "VNPay"}
+                                                {isPaying ? "Đang xử lý..." : "Thanh toán qua VNPay"}
                                             </Button>
                                         </div>
                                     </>

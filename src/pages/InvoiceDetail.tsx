@@ -4,6 +4,7 @@ import InvoiceDetail from "@/components/invoice/Detail";
 import type { InvoiceResponse } from "@/types/invoice";
 import { addressService } from "@/services/addressService";
 import type { AddressResponse } from "@/types/user";
+import { paymentService } from "@/services/paymentService";
 
 interface LocationState {
     invoice?: InvoiceResponse;
@@ -15,40 +16,62 @@ export default function InvoiceDetailPage() {
     const state = location.state as LocationState | null;
     const invoice = state?.invoice;
 
-    const [defaultAddress, setDefaultAddress] = useState<AddressResponse | null>(null);
+    const [addresses, setAddresses] = useState<AddressResponse[]>([]);
+    const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+    const [isPaying, setIsPaying] = useState<boolean>(false);
 
     useEffect(() => {
-        const fetchDefaultAddress = async () => {
+        const fetchAddresses = async () => {
             try {
-                const addresses = await addressService.getMyAddresses();
-                const foundDefault = addresses.find(addr => addr.isDefault);
+                const addressList = await addressService.getMyAddresses();
+                setAddresses(addressList);
+
+                const foundDefault = addressList.find(addr => addr.isDefault) || addressList[0];
                 if (foundDefault) {
-                    setDefaultAddress(foundDefault);
+                    setSelectedAddressId(foundDefault.id);
                 }
             } catch (error) {
                 // eslint-disable-next-line no-console
-                console.error("Failed to load default address for invoice detail:", error);
+                console.error("Failed to load addresses for invoice detail:", error);
             }
         };
 
-        fetchDefaultAddress();
+        fetchAddresses();
     }, []);
 
-    const handlePay = (method: "COD" | "VNPAY") => {
+    const selectedAddress: AddressResponse | null =
+        selectedAddressId != null ? addresses.find(addr => addr.id === selectedAddressId) || null : null;
+
+    const handlePay = async (method: "VNPAY") => {
         if (!invoice) return;
-        // TODO: Tích hợp API thanh toán thực tế khi backend sẵn sàng
-        // Hiện tại chỉ log đơn giản
-        // eslint-disable-next-line no-console
-        console.log("Thanh toán đơn hàng", invoice.id, "bằng", method);
-        alert(
-            method === "COD"
-                ? "Chức năng thanh toán khi nhận hàng sẽ được tích hợp sau."
-                : "Chức năng thanh toán qua VNPay sẽ được tích hợp sau."
-        );
+
+        if (!selectedAddress) {
+            alert("Vui lòng chọn địa chỉ nhận hàng trước khi thanh toán.");
+            return;
+        }
+
+        try {
+            setIsPaying(true);
+            // Tạo URL thanh toán VNPay và redirect người dùng
+            const paymentUrl = await paymentService.createVnPayPayment(invoice.id, selectedAddress.id);
+            if (typeof window !== "undefined") {
+                window.location.href = paymentUrl;
+            }
+        } catch (error: any) {
+            // eslint-disable-next-line no-console
+            console.error("Failed to create VNPay payment:", error);
+            alert(error?.message || "Không tạo được liên kết thanh toán VNPay. Vui lòng thử lại.");
+        } finally {
+            setIsPaying(false);
+        }
     };
 
     const handleViewAuction = (auctionSessionId: number) => {
         navigate(`/auction/${auctionSessionId}`);
+    };
+
+    const handleChangeAddress = (addressId: number) => {
+        setSelectedAddressId(addressId);
     };
 
     if (!invoice) {
@@ -82,9 +105,11 @@ export default function InvoiceDetailPage() {
                 <InvoiceDetail
                     invoice={invoice}
                     onPay={handlePay}
-                    isPaying={false}
+                    isPaying={isPaying}
                     onViewAuction={handleViewAuction}
-                    defaultAddress={defaultAddress ?? undefined}
+                    selectedAddress={selectedAddress ?? undefined}
+                    addresses={addresses}
+                    onChangeAddress={handleChangeAddress}
                 />
             </div>
         </div>

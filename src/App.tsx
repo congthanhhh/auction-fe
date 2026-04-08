@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage';
 import Profile from './pages/Profile';
 import MyInvoices from './pages/MyInvoices';
 import InvoiceDetailPage from './pages/InvoiceDetail';
+import { VnPayCallback } from './pages/VnPayCallback';
 import ViewAll from './components/auction/ViewAll';
 import Recommended from './components/auction/Recommended';
 import { ThemeProvider } from './components/theme-provider';
@@ -35,6 +36,7 @@ function App() {
             <Route path="view-all-featured" element={<ViewAll />} />
             <Route path="view-all-recommended" element={<Recommended />} />
             <Route path="auction/:id" element={<Detail />} />
+            <Route path="payment/vn-pay-callback" element={<VnPayCallback />} />
           </Route>
 
           {/* Routes without MainLayout */}

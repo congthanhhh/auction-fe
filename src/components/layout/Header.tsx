@@ -219,11 +219,11 @@ export default function Header() {
                                 <DropdownMenuContent className="w-72" align="start">
                                     <ScrollArea className="h-72">
                                         <DropdownMenuItem asChild>
-                                            <Link to="/myshop/selling" className="px-4 py-2 text-xl cursor-pointer">
+                                            <Link to="/profile" className="px-4 py-2 text-xl cursor-pointer">
                                                 Personal Information
                                             </Link>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
+                                        {/* <DropdownMenuItem asChild>
                                             <Link to="/myshop/bidding" className="px-4 py-2 text-xl cursor-pointer">
                                                 Open orders
                                             </Link>
@@ -247,7 +247,7 @@ export default function Header() {
                                             <Link to="/myshop/won" className="px-4 py-2 text-xl cursor-pointer">
                                                 Favorites
                                             </Link>
-                                        </DropdownMenuItem>
+                                        </DropdownMenuItem> */}
                                         <DropdownMenuItem asChild>
                                             <Link to="/my-invoices" className="px-4 py-2 text-xl cursor-pointer">
                                                 My Orders

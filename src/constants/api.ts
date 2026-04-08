@@ -40,6 +40,11 @@ export const API_ENDPOINTS = {
   INVOICE: {
     MY_INVOICES: '/invoices/my-invoices',
   },
+  // Payment
+  PAYMENT: {
+    VN_PAY: '/payments/vn-pay',
+    VN_PAY_CALLBACK: '/payments/vn-pay-callback',
+  },
 } as const;
 
 export const GOOGLE_OAUTH_CONFIG = {
