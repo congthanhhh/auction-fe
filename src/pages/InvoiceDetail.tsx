@@ -43,6 +43,8 @@ export default function InvoiceDetailPage() {
         selectedAddressId != null ? addresses.find(addr => addr.id === selectedAddressId) || null : null;
 
     const handlePay = async (method: "VNPAY") => {
+        // Hiện tại chỉ hỗ trợ VNPay, nhưng vẫn sử dụng tham số để tránh cảnh báo unused
+        if (method !== "VNPAY") return;
         if (!invoice) return;
 
         if (!selectedAddress) {

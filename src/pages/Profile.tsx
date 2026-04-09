@@ -14,30 +14,23 @@ const Profile = () => {
     const { user } = useAuthStore();
 
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
-    const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true);
     const [profileError, setProfileError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setProfileError(null);
-                setIsLoadingProfile(true);
                 const profileResponse = await userService.getMyProfile();
                 setProfile(profileResponse);
             } catch (error) {
                 console.error("Failed to load profile:", error);
                 setProfileError("Failed to load profile information.");
             } finally {
-                setIsLoadingProfile(false);
             }
         };
 
         fetchData();
     }, []);
-
-    const initials = user?.username
-        ? user.username.slice(0, 2).toUpperCase()
-        : "U";
 
     return (
         <div className="bg-gray-50 dark:bg-gray-950 py-8">
