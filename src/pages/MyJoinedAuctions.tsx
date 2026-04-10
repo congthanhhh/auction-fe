@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import InvoiceList from "@/components/invoice/InvoiceList";
-import { invoiceService } from "@/services/invoiceService";
-import type { InvoicePageResponse, InvoiceStatus, InvoiceType } from "@/types/invoice";
+import MyJoinedList from "@/components/auction/MyJoinedList";
+import { auctionService } from "@/services/auctionService";
+import type { AuctionSessionResponse, AuctionStatus, PageResponse } from "@/types/auction";
 import { useRequireAuth } from "@/hooks/use-require-auth";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     Pagination,
     PaginationContent,
@@ -13,38 +13,28 @@ import {
     PaginationPrevious,
 } from "@/components/ui/pagination";
 
-const statusFilterOptions: { value: "ALL" | InvoiceStatus; label: string }[] = [
+const statusFilterOptions: { value: "ALL" | AuctionStatus; label: string }[] = [
     { value: "ALL", label: "Tất cả trạng thái" },
-    { value: "PENDING", label: "Chờ thanh toán" },
-    { value: "PAID", label: "Đã thanh toán" },
-    { value: "SHIPPING", label: "Đang giao" },
-    { value: "COMPLETED", label: "Hoàn thành" },
-    { value: "DISPUTE", label: "Khiếu nại" },
-    { value: "CANCELLED_NON_PAYMENT", label: "Hủy (bùng hàng)" },
-    { value: "CANCELLED_BY_SELLER", label: "Hủy bởi người bán" },
-    { value: "REFUNDED", label: "Đã hoàn tiền" },
+    { value: "SCHEDULED", label: "Chưa bắt đầu" },
+    { value: "ACTIVE", label: "Đang diễn ra" },
+    { value: "WAITING_PAYMENT", label: "Chờ thanh toán" },
+    { value: "ENDED", label: "Đã kết thúc" },
+    { value: "FAILED", label: "Không thành công" },
+    { value: "CANCELLED", label: "Đã hủy" },
 ];
 
-const typeFilterOptions: { value: "ALL" | InvoiceType; label: string }[] = [
-    { value: "ALL", label: "Tất cả loại" },
-    { value: "AUCTION_SALE", label: "Hóa đơn mua hàng" },
-    { value: "LISTING_FEE", label: "Phí giá sàn" },
-];
-
-export default function MyInvoices() {
+export default function MyJoinedAuctions() {
     const requireAuth = useRequireAuth();
 
-    const [pageData, setPageData] = useState<InvoicePageResponse | null>(null);
+    const [pageData, setPageData] = useState<PageResponse<AuctionSessionResponse> | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     const [page, setPage] = useState<number>(1);
     const [size] = useState<number>(10);
-    const [statusFilter, setStatusFilter] = useState<"ALL" | InvoiceStatus>("ALL");
-    const [typeFilter, setTypeFilter] = useState<"ALL" | InvoiceType>("ALL");
+    const [statusFilter, setStatusFilter] = useState<"ALL" | AuctionStatus>("ALL");
 
     useEffect(() => {
-        // Ensure user is authenticated before loading invoices
         const allowed = requireAuth();
         if (!allowed) return;
     }, [requireAuth]);
@@ -52,17 +42,16 @@ export default function MyInvoices() {
     useEffect(() => {
         let isMounted = true;
 
-        const fetchInvoices = async () => {
+        const fetchMyJoined = async () => {
             setIsLoading(true);
             setError(null);
 
             try {
-                const response = await invoiceService.getMyInvoices({
+                const response = await auctionService.getMyJoinedSessions(
                     page,
                     size,
-                    status: statusFilter === "ALL" ? undefined : statusFilter,
-                    type: typeFilter === "ALL" ? undefined : typeFilter,
-                });
+                    statusFilter === "ALL" ? undefined : statusFilter,
+                );
 
                 if (isMounted) {
                     setPageData(response);
@@ -72,7 +61,7 @@ export default function MyInvoices() {
                 const message =
                     err && typeof err === "object" && "message" in err
                         ? String((err as any).message)
-                        : "Không thể tải danh sách hóa đơn";
+                        : "Không thể tải danh sách phiên đã tham gia";
                 setError(message);
             } finally {
                 if (isMounted) {
@@ -81,15 +70,14 @@ export default function MyInvoices() {
             }
         };
 
-        fetchInvoices();
+        fetchMyJoined();
 
         return () => {
             isMounted = false;
         };
-    }, [page, size, statusFilter, typeFilter]);
+    }, [page, size, statusFilter]);
 
     const totalPages = pageData?.totalPages ?? 1;
-
     const canGoPrev = page > 1;
     const canGoNext = page < totalPages;
 
@@ -110,7 +98,7 @@ export default function MyInvoices() {
             <div className="container mx-auto px-4 space-y-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <h1 className="text-2xl font-bold text-brand2 dark:text-white">
-                        Đơn hàng của tôi
+                        Phiên đấu giá đã tham gia
                     </h1>
                     <div className="flex flex-wrap gap-3 text-sm items-center">
                         <div className="flex flex-col gap-1">
@@ -134,39 +122,18 @@ export default function MyInvoices() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-muted-foreground">Loại hóa đơn</Label>
-                            <Select
-                                value={typeFilter}
-                                onValueChange={(value) => {
-                                    setTypeFilter(value as any);
-                                    setPage(1);
-                                }}
-                            >
-                                <SelectTrigger size="sm" className="min-w-40">
-                                    <SelectValue placeholder="Lọc theo loại" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {typeFilterOptions.map((opt) => (
-                                        <SelectItem key={opt.value} value={opt.value}>
-                                            {opt.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
                     </div>
                 </div>
 
                 {isLoading && (
-                    <p className="text-sm text-muted-foreground">Đang tải danh sách hóa đơn...</p>
+                    <p className="text-sm text-muted-foreground">Đang tải danh sách phiên đã tham gia...</p>
                 )}
                 {error && !isLoading && (
                     <p className="text-sm text-red-600">{error}</p>
                 )}
 
                 {!isLoading && !error && (
-                    <InvoiceList invoices={pageData?.data ?? []} />
+                    <MyJoinedList sessions={pageData?.data ?? []} />
                 )}
 
                 {!isLoading && !error && totalPages > 1 && (

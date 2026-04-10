@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface InvoiceDetailProps {
     invoice: InvoiceResponse;
-    onPay?: (method: "VNPAY") => void;
+    onPay?: () => void;
     isPaying?: boolean;
     onViewAuction?: (auctionSessionId: number) => void;
     selectedAddress?: AddressResponse;
@@ -199,7 +199,7 @@ export default function InvoiceDetail({
                                                 size="sm"
                                                 className="flex-1 bg-brand text-white"
                                                 disabled={isPaying}
-                                                onClick={() => onPay?.("VNPAY")}
+                                                onClick={onPay}
                                             >
                                                 {isPaying ? "Đang xử lý..." : "Thanh toán qua VNPay"}
                                             </Button>

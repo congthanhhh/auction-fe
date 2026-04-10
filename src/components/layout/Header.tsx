@@ -223,12 +223,12 @@ export default function Header() {
                                                 Personal Information
                                             </Link>
                                         </DropdownMenuItem>
-                                        {/* <DropdownMenuItem asChild>
-                                            <Link to="/myshop/bidding" className="px-4 py-2 text-xl cursor-pointer">
-                                                Open orders
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/my-joined" className="px-4 py-2 text-xl cursor-pointer">
+                                                My Joined Auctions
                                             </Link>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
+                                        {/*  <DropdownMenuItem asChild>
                                             <Link to="/myshop/watchlist" className="px-4 py-2 text-xl cursor-pointer">
                                                 Auction inprogress
                                             </Link>

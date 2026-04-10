@@ -1,4 +1,5 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api/v1';
+// export const API_BASE_URL = 'http://localhost:8081/api/v1';
 
 export const API_ENDPOINTS = {
   // Auth
@@ -22,6 +23,7 @@ export const API_ENDPOINTS = {
     RECOMMENDED: '/auctions/recommended',
     BID: (id: string) => `/auctions/${id}/bid`,
     ACTIVE_DESC: '/auction-sessions/active-desc',
+    MY_JOINED: '/auction-sessions/my-joined',
   },
   // User
   USER: {
@@ -39,6 +41,7 @@ export const API_ENDPOINTS = {
   // Invoice
   INVOICE: {
     MY_INVOICES: '/invoices/my-invoices',
+    DETAIL: (id: number) => `/invoices/${id}`,
   },
   // Payment
   PAYMENT: {
