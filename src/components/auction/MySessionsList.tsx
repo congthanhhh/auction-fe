@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { AuctionSessionResponse, AuctionStatus } from "@/types/auction";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
 import { auctionService } from "@/services/auctionService";
+import { bidService } from "@/services/bidService";
 
 interface MySessionsListProps {
     sessions: AuctionSessionResponse[];
@@ -36,6 +38,47 @@ const auctionStatusVariants: Record<AuctionStatus, string> = {
 
 export default function MySessionsList({ sessions, onToggleStatus }: MySessionsListProps) {
     const navigate = useNavigate();
+
+    const [bidCounts, setBidCounts] = useState<Record<number, number>>({});
+
+    useEffect(() => {
+        if (sessions.length === 0) return;
+
+        let isMounted = true;
+
+        const fetchBidCounts = async () => {
+            const uniqueProductIds = Array.from(
+                new Set(sessions.map((session) => session.product.id)),
+            );
+
+            try {
+                const results = await Promise.all(
+                    uniqueProductIds.map(async (productId) => {
+                        const count = await bidService.getBidCount(productId);
+                        return { productId, count };
+                    }),
+                );
+
+                if (!isMounted) return;
+
+                setBidCounts((prev) => {
+                    const next = { ...prev };
+                    for (const { productId, count } of results) {
+                        next[productId] = count;
+                    }
+                    return next;
+                });
+            } catch {
+                if (!isMounted) return;
+            }
+        };
+
+        fetchBidCounts();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [sessions]);
 
     return (
         <div className="w-full">
@@ -68,6 +111,7 @@ export default function MySessionsList({ sessions, onToggleStatus }: MySessionsL
                                 <TableBody>
                                     {sessions.map((session) => {
                                         const firstImage = session.product.images[0]?.url;
+                                        const bidCount = bidCounts[session.product.id] ?? 0;
                                         const canToggleStatus =
                                             session.status === "ACTIVE" || session.status === "SCHEDULED" || session.status === "CANCELLED";
                                         const startInputValue = session.startTime ? session.startTime.slice(0, 16) : "";
@@ -95,6 +139,9 @@ export default function MySessionsList({ sessions, onToggleStatus }: MySessionsL
                                                             >
                                                                 {session.product.name}
                                                             </button>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                Lượt bid: {bidCount}
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </TableCell>
@@ -133,110 +180,112 @@ export default function MySessionsList({ sessions, onToggleStatus }: MySessionsL
                                                         : "--"}
                                                 </TableCell>
                                                 <TableCell className="text-right space-x-2 whitespace-nowrap">
-                                                    <Dialog>
-                                                        <DialogTrigger asChild>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                            >
-                                                                Chỉnh sửa
-                                                            </Button>
-                                                        </DialogTrigger>
-                                                        <DialogContent>
-                                                            <form
-                                                                onSubmit={async (event: any) => {
-                                                                    event.preventDefault();
+                                                    {bidCount === 0 && (
+                                                        <Dialog>
+                                                            <DialogTrigger asChild>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                >
+                                                                    Chỉnh sửa
+                                                                </Button>
+                                                            </DialogTrigger>
+                                                            <DialogContent>
+                                                                <form
+                                                                    onSubmit={async (event: any) => {
+                                                                        event.preventDefault();
 
-                                                                    const form = event.currentTarget as HTMLFormElement;
-                                                                    const formData = new FormData(form);
+                                                                        const form = event.currentTarget as HTMLFormElement;
+                                                                        const formData = new FormData(form);
 
-                                                                    const startTime = formData.get("startTime") as string | null;
-                                                                    const endTime = formData.get("endTime") as string | null;
-                                                                    const startPriceValue = formData.get("startPrice") as string | null;
-                                                                    const reservePriceValue = formData.get("reservePrice") as string | null;
-                                                                    const buyNowPriceValue = formData.get("buyNowPrice") as string | null;
+                                                                        const startTime = formData.get("startTime") as string | null;
+                                                                        const endTime = formData.get("endTime") as string | null;
+                                                                        const startPriceValue = formData.get("startPrice") as string | null;
+                                                                        const reservePriceValue = formData.get("reservePrice") as string | null;
+                                                                        const buyNowPriceValue = formData.get("buyNowPrice") as string | null;
 
-                                                                    await auctionService.updateSession(session.id, {
-                                                                        startTime: startTime && startTime.trim() !== "" ? startTime : null,
-                                                                        endTime: endTime && endTime.trim() !== "" ? endTime : null,
-                                                                        startPrice: startPriceValue && startPriceValue.trim() !== "" ? Number(startPriceValue) : null,
-                                                                        reservePrice: reservePriceValue && reservePriceValue.trim() !== "" ? Number(reservePriceValue) : null,
-                                                                        buyNowPrice: buyNowPriceValue && buyNowPriceValue.trim() !== "" ? Number(buyNowPriceValue) : null,
-                                                                    });
-                                                                }}
-                                                                className="space-y-4"
-                                                            >
-                                                                <DialogHeader>
-                                                                    <DialogTitle>Chỉnh sửa phiên đấu giá</DialogTitle>
-                                                                    <DialogDescription>
-                                                                        Điều chỉnh thời gian và mức giá cho phiên đấu giá này.
-                                                                    </DialogDescription>
-                                                                </DialogHeader>
-                                                                <div className="space-y-4">
-                                                                    <div className="space-y-1">
-                                                                        <Label className="text-xs text-muted-foreground">Sản phẩm</Label>
-                                                                        <p className="text-sm font-medium text-foreground">
-                                                                            {session.product.name}
-                                                                        </p>
+                                                                        await auctionService.updateSession(session.id, {
+                                                                            startTime: startTime && startTime.trim() !== "" ? startTime : null,
+                                                                            endTime: endTime && endTime.trim() !== "" ? endTime : null,
+                                                                            startPrice: startPriceValue && startPriceValue.trim() !== "" ? Number(startPriceValue) : null,
+                                                                            reservePrice: reservePriceValue && reservePriceValue.trim() !== "" ? Number(reservePriceValue) : null,
+                                                                            buyNowPrice: buyNowPriceValue && buyNowPriceValue.trim() !== "" ? Number(buyNowPriceValue) : null,
+                                                                        });
+                                                                    }}
+                                                                    className="space-y-4"
+                                                                >
+                                                                    <DialogHeader>
+                                                                        <DialogTitle>Chỉnh sửa phiên đấu giá</DialogTitle>
+                                                                        <DialogDescription>
+                                                                            Điều chỉnh thời gian và mức giá cho phiên đấu giá này.
+                                                                        </DialogDescription>
+                                                                    </DialogHeader>
+                                                                    <div className="space-y-4">
+                                                                        <div className="space-y-1">
+                                                                            <Label className="text-xs text-muted-foreground">Sản phẩm</Label>
+                                                                            <p className="text-sm font-medium text-foreground">
+                                                                                {session.product.name}
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="grid gap-3 sm:grid-cols-2">
+                                                                            <div className="space-y-1.5">
+                                                                                <Label htmlFor={`startTime-${session.id}`}>Thời gian bắt đầu</Label>
+                                                                                <Input
+                                                                                    id={`startTime-${session.id}`}
+                                                                                    name="startTime"
+                                                                                    type="datetime-local"
+                                                                                    defaultValue={startInputValue}
+                                                                                />
+                                                                            </div>
+                                                                            <div className="space-y-1.5">
+                                                                                <Label htmlFor={`endTime-${session.id}`}>Thời gian kết thúc</Label>
+                                                                                <Input
+                                                                                    id={`endTime-${session.id}`}
+                                                                                    name="endTime"
+                                                                                    type="datetime-local"
+                                                                                    defaultValue={endInputValue}
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="grid gap-3 sm:grid-cols-3">
+                                                                            <div className="space-y-1.5">
+                                                                                <Label htmlFor={`startPrice-${session.id}`}>Giá khởi điểm</Label>
+                                                                                <Input
+                                                                                    id={`startPrice-${session.id}`}
+                                                                                    name="startPrice"
+                                                                                    type="number"
+                                                                                    defaultValue={session.startPrice}
+                                                                                />
+                                                                            </div>
+                                                                            <div className="space-y-1.5">
+                                                                                <Label htmlFor={`reservePrice-${session.id}`}>Giá chấp nhận bán</Label>
+                                                                                <Input
+                                                                                    id={`reservePrice-${session.id}`}
+                                                                                    name="reservePrice"
+                                                                                    type="number"
+                                                                                    placeholder="Nhập giá chấp nhận bán"
+                                                                                />
+                                                                            </div>
+                                                                            <div className="space-y-1.5">
+                                                                                <Label htmlFor={`buyNowPrice-${session.id}`}>Giá mua ngay</Label>
+                                                                                <Input
+                                                                                    id={`buyNowPrice-${session.id}`}
+                                                                                    name="buyNowPrice"
+                                                                                    type="number"
+                                                                                    defaultValue={session.buyNowPrice ?? ""}
+                                                                                />
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="grid gap-3 sm:grid-cols-2">
-                                                                        <div className="space-y-1.5">
-                                                                            <Label htmlFor={`startTime-${session.id}`}>Thời gian bắt đầu</Label>
-                                                                            <Input
-                                                                                id={`startTime-${session.id}`}
-                                                                                name="startTime"
-                                                                                type="datetime-local"
-                                                                                defaultValue={startInputValue}
-                                                                            />
-                                                                        </div>
-                                                                        <div className="space-y-1.5">
-                                                                            <Label htmlFor={`endTime-${session.id}`}>Thời gian kết thúc</Label>
-                                                                            <Input
-                                                                                id={`endTime-${session.id}`}
-                                                                                name="endTime"
-                                                                                type="datetime-local"
-                                                                                defaultValue={endInputValue}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="grid gap-3 sm:grid-cols-3">
-                                                                        <div className="space-y-1.5">
-                                                                            <Label htmlFor={`startPrice-${session.id}`}>Giá khởi điểm</Label>
-                                                                            <Input
-                                                                                id={`startPrice-${session.id}`}
-                                                                                name="startPrice"
-                                                                                type="number"
-                                                                                defaultValue={session.startPrice}
-                                                                            />
-                                                                        </div>
-                                                                        <div className="space-y-1.5">
-                                                                            <Label htmlFor={`reservePrice-${session.id}`}>Giá chấp nhận bán</Label>
-                                                                            <Input
-                                                                                id={`reservePrice-${session.id}`}
-                                                                                name="reservePrice"
-                                                                                type="number"
-                                                                                placeholder="Nhập giá chấp nhận bán"
-                                                                            />
-                                                                        </div>
-                                                                        <div className="space-y-1.5">
-                                                                            <Label htmlFor={`buyNowPrice-${session.id}`}>Giá mua ngay</Label>
-                                                                            <Input
-                                                                                id={`buyNowPrice-${session.id}`}
-                                                                                name="buyNowPrice"
-                                                                                type="number"
-                                                                                defaultValue={session.buyNowPrice ?? ""}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <DialogFooter showCloseButton>
-                                                                    <Button type="submit">
-                                                                        Lưu thay đổi
-                                                                    </Button>
-                                                                </DialogFooter>
-                                                            </form>
-                                                        </DialogContent>
-                                                    </Dialog>
+                                                                    <DialogFooter showCloseButton>
+                                                                        <Button type="submit">
+                                                                            Lưu thay đổi
+                                                                        </Button>
+                                                                    </DialogFooter>
+                                                                </form>
+                                                            </DialogContent>
+                                                        </Dialog>
+                                                    )}
                                                     {onToggleStatus && canToggleStatus && (
                                                         <Button
                                                             variant="ghost"
