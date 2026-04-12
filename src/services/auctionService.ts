@@ -1,6 +1,12 @@
 import { api } from './api';
 import { API_ENDPOINTS } from '@/constants/api';
-import type { AuctionSessionResponse, AuctionStatus, PageResponse } from '@/types/auction';
+import type {
+    // AuctionSessionRequest,
+    AuctionSessionResponse,
+    AuctionStatus,
+    PageResponse,
+    UpdateAuctionSessionRequest,
+} from '@/types/auction';
 
 /**
  * Helper để unwrap response từ api instance
@@ -43,5 +49,36 @@ export const auctionService = {
 
         const response = await api.get(API_ENDPOINTS.AUCTION.MY_JOINED, { params });
         return unwrapApiResponse<PageResponse<AuctionSessionResponse>>(response);
+    },
+
+    getMySessions: async (
+        page: number = 1,
+        size: number = 10,
+        status?: AuctionStatus
+    ): Promise<PageResponse<AuctionSessionResponse>> => {
+        const params: { page: number; size: number; status?: AuctionStatus } = { page, size };
+        if (status) {
+            params.status = status;
+        }
+
+        const response = await api.get(API_ENDPOINTS.AUCTION.MY_SESSIONS, { params });
+        return unwrapApiResponse<PageResponse<AuctionSessionResponse>>(response);
+    },
+
+    cancelSession: async (id: number | string): Promise<AuctionSessionResponse> => {
+        const numericId = Number(id);
+        const response = await api.put(API_ENDPOINTS.AUCTION.CANCEL_SESSION(numericId));
+        return unwrapApiResponse<AuctionSessionResponse>(response);
+    },
+
+    reactivateSession: async (id: number | string): Promise<AuctionSessionResponse> => {
+        const numericId = Number(id);
+        const response = await api.put(API_ENDPOINTS.AUCTION.REACTIVATE_SESSION(numericId));
+        return unwrapApiResponse<AuctionSessionResponse>(response);
+    },
+
+    updateSession: async (id: number | string, data: UpdateAuctionSessionRequest): Promise<void> => {
+        const numericId = Number(id);
+        await api.put(API_ENDPOINTS.AUCTION.UPDATE_SESSION(numericId), data);
     },
 };

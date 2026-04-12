@@ -78,8 +78,8 @@ export default function MyJoinedList({ sessions }: MyJoinedListProps) {
                                                                 className="h-12 w-12 rounded-md object-cover border"
                                                             />
                                                         )}
-                                                        <div className="space-y-0.5">
-                                                            <p className="text-sm font-medium text-foreground line-clamp-1">
+                                                        <div className="space-y-0.5 w-35">
+                                                            <p className="text-sm font-medium text-foreground truncate block w-full text-left hover:underline">
                                                                 {session.product.name}
                                                             </p>
                                                             <p className="text-xs text-muted-foreground">

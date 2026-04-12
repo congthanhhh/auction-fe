@@ -24,6 +24,10 @@ export const API_ENDPOINTS = {
     BID: (id: string) => `/auctions/${id}/bid`,
     ACTIVE_DESC: '/auction-sessions/active-desc',
     MY_JOINED: '/auction-sessions/my-joined',
+    MY_SESSIONS: '/auction-sessions/my-sessions',
+    CANCEL_SESSION: (id: number) => `/auction-sessions/${id}/cancel`,
+    REACTIVATE_SESSION: (id: number) => `/auction-sessions/${id}/reactivate`,
+    UPDATE_SESSION: (id: number) => `/auction-sessions/update/${id}`,
   },
   // User
   USER: {

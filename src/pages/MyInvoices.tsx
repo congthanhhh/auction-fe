@@ -5,13 +5,7 @@ import type { InvoicePageResponse, InvoiceStatus, InvoiceType } from "@/types/in
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationNext,
-    PaginationPrevious,
-} from "@/components/ui/pagination";
+import { SimplePagination } from "@/components/common/SimplePagination";
 
 const statusFilterOptions: { value: "ALL" | InvoiceStatus; label: string }[] = [
     { value: "ALL", label: "Tất cả trạng thái" },
@@ -90,19 +84,8 @@ export default function MyInvoices() {
 
     const totalPages = pageData?.totalPages ?? 1;
 
-    const canGoPrev = page > 1;
-    const canGoNext = page < totalPages;
-
-    const handlePrev = (event: React.MouseEvent<HTMLAnchorElement>) => {
-        event.preventDefault();
-        if (!canGoPrev) return;
-        setPage((prev) => Math.max(1, prev - 1));
-    };
-
-    const handleNext = (event: React.MouseEvent<HTMLAnchorElement>) => {
-        event.preventDefault();
-        if (!canGoNext) return;
-        setPage((prev) => prev + 1);
+    const handlePageChange = (nextPage: number) => {
+        setPage(nextPage);
     };
 
     return (
@@ -171,29 +154,11 @@ export default function MyInvoices() {
 
                 {!isLoading && !error && totalPages > 1 && (
                     <div className="mt-4">
-                        <Pagination>
-                            <PaginationContent>
-                                <PaginationItem>
-                                    <PaginationPrevious
-                                        href="#"
-                                        onClick={handlePrev}
-                                        className={!canGoPrev ? "pointer-events-none opacity-50" : ""}
-                                    />
-                                </PaginationItem>
-                                <PaginationItem>
-                                    <span className="px-3 text-xs text-muted-foreground">
-                                        Trang {page} / {totalPages}
-                                    </span>
-                                </PaginationItem>
-                                <PaginationItem>
-                                    <PaginationNext
-                                        href="#"
-                                        onClick={handleNext}
-                                        className={!canGoNext ? "pointer-events-none opacity-50" : ""}
-                                    />
-                                </PaginationItem>
-                            </PaginationContent>
-                        </Pagination>
+                        <SimplePagination
+                            page={page}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                        />
                     </div>
                 )}
             </div>

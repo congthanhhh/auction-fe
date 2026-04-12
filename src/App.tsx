@@ -7,6 +7,7 @@ import MyInvoices from './pages/MyInvoices';
 import InvoiceDetailPage from './pages/InvoiceDetail';
 import { VnPayCallback } from './pages/VnPayCallback';
 import MyJoinedAuctions from './pages/MyJoinedAuctions';
+import MySessions from './pages/MySessions';
 import ViewAll from './components/auction/ViewAll';
 import Recommended from './components/auction/Recommended';
 import { ThemeProvider } from './components/theme-provider';
@@ -35,6 +36,7 @@ function App() {
             <Route path="my-invoices" element={<MyInvoices />} />
             <Route path="my-invoices/:id" element={<InvoiceDetailPage />} />
             <Route path="my-joined" element={<MyJoinedAuctions />} />
+            <Route path="my-sessions" element={<MySessions />} />
             <Route path="view-all-featured" element={<ViewAll />} />
             <Route path="view-all-recommended" element={<Recommended />} />
             <Route path="auction/:id" element={<Detail />} />

@@ -212,7 +212,7 @@ export default function Header() {
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button className="text-white bg-brand2 uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center gap-2 text-lg font-semibold w-full">
-                                        MyShop
+                                        My Auction
                                         <ChevronDown className="h-4 w-4" />
                                     </button>
                                 </DropdownMenuTrigger>
@@ -228,12 +228,12 @@ export default function Header() {
                                                 My Joined Auctions
                                             </Link>
                                         </DropdownMenuItem>
-                                        {/*  <DropdownMenuItem asChild>
-                                            <Link to="/myshop/watchlist" className="px-4 py-2 text-xl cursor-pointer">
-                                                Auction inprogress
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/my-sessions" className="px-4 py-2 text-xl cursor-pointer">
+                                                My Shop
                                             </Link>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
+                                        {/* <DropdownMenuItem asChild>
                                             <Link to="/myshop/won" className="px-4 py-2 text-xl cursor-pointer">
                                                 Closed auctions
                                             </Link>

@@ -70,6 +70,23 @@ export interface AuctionSessionResponse {
     myMaxBid: number | null;
 }
 
+
+export interface AuctionSessionRequest {
+    productId: number;
+    startTime: string; // ISO hoặc chuỗi datetime-local
+    endTime: string;   // ISO hoặc chuỗi datetime-local
+    reservePrice: number;
+    buyNowPrice?: number | null;
+}
+
+export interface UpdateAuctionSessionRequest {
+    startTime?: string | null;
+    endTime?: string | null;
+    startPrice?: number | null;
+    reservePrice?: number | null;
+    buyNowPrice?: number | null;
+}
+
 export interface PageResponse<T> {
     currentPage: number;
     totalPages: number;
