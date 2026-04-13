@@ -1,7 +1,8 @@
 import io from 'socket.io-client';
 import { useAuthStore } from '@/stores/authStore';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:9092';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+// const SOCKET_URL = 'http://localhost:9092';
 
 class SocketService {
     private socket: any | null = null;

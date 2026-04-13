@@ -190,9 +190,6 @@ export default function InvoiceDetail({
                                 </p>
                                 {canPay ? (
                                     <>
-                                        <p className="text-xs text-muted-foreground">
-                                            Vui lòng chọn phương thức thanh toán:
-                                        </p>
                                         <div className="mt-1 flex flex-col gap-2 sm:flex-row">
                                             <Button
                                                 type="button"
