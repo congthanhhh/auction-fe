@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { socketService } from "@/services/socketService";
 import type { BidResponse, PriceUpdateData } from "@/types/auction";
 import { formatCurrency } from "@/lib/utils";
 import { useRequireAuth } from "@/hooks/use-require-auth";
+import { auctionService } from "@/services/auctionService";
 
 const calculateTimeLeft = (endTime: string) => {
     const now = new Date();
@@ -52,6 +53,7 @@ const parseBidTime = (raw: unknown): Date | null => {
 export default function Detail() {
     const { id } = useParams<{ id: string }>();
     const requireAuth = useRequireAuth();
+    const navigate = useNavigate();
     const {
         auction,
         isLoading,
@@ -94,6 +96,7 @@ export default function Detail() {
 
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [maxBid, setMaxBid] = useState("");
+    const [isBuying, setIsBuying] = useState(false);
 
     const handlePlaceBid = () => {
         if (!id) return;
@@ -104,6 +107,25 @@ export default function Detail() {
         if (!maxBid) return;
 
         placeBid(parseInt(id, 10), parseFloat(maxBid));
+    };
+
+    const handleBuyNow = async () => {
+        if (!id) return;
+
+        const isAllowed = requireAuth();
+        if (!isAllowed) return;
+
+        try {
+            setIsBuying(true);
+            const invoice = await auctionService.buyNow(Number(id));
+            navigate(`/my-invoices/${invoice.id}`, { state: { invoice } });
+        } catch (error: any) {
+            // eslint-disable-next-line no-console
+            console.error("Failed to buy now:", error);
+            alert(error?.message || "Không thể thực hiện mua ngay. Vui lòng thử lại.");
+        } finally {
+            setIsBuying(false);
+        }
     };
 
     if (isLoading) {
@@ -205,7 +227,15 @@ export default function Detail() {
                                     <>
                                         <div className="space-y-1 text-center">
                                             <span className="text-lg font-semibold">Buy Now for {formatCurrency(buyNowPrice)}</span>
-                                            <Button className="w-full mt-2" variant="outline">Buy Now</Button>
+                                            <Button
+                                                type="button"
+                                                className="w-full mt-2 text-white bg-brand hover:bg-brand-hover"
+                                                variant="outline"
+                                                onClick={handleBuyNow}
+                                                disabled={isBuying}
+                                            >
+                                                {isBuying ? "Processing..." : "Buy Now"}
+                                            </Button>
                                         </div>
                                         <Separator />
                                     </>

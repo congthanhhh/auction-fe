@@ -25,9 +25,22 @@ export const API_ENDPOINTS = {
     ACTIVE_DESC: '/auction-sessions/active-desc',
     MY_JOINED: '/auction-sessions/my-joined',
     MY_SESSIONS: '/auction-sessions/my-sessions',
+    BUY_NOW: (id: number) => `/auction-sessions/${id}/buy-now`,
     CANCEL_SESSION: (id: number) => `/auction-sessions/${id}/cancel`,
     REACTIVATE_SESSION: (id: number) => `/auction-sessions/${id}/reactivate`,
     UPDATE_SESSION: (id: number) => `/auction-sessions/update/${id}`,
+    CREATE_SESSION: '/auction-sessions',
+  },
+  // Category
+  CATEGORY: {
+    ROOT: '/categories',
+    BY_ID: (id: number) => `/categories/${id}`,
+  },
+  // Product
+  PRODUCT: {
+    ROOT: '/products',
+    BY_ID: (id: number) => `/products/${id}`,
+    MY_PRODUCTS: '/products/my-products',
   },
   // User
   USER: {
@@ -46,6 +59,11 @@ export const API_ENDPOINTS = {
   INVOICE: {
     MY_INVOICES: '/invoices/my-invoices',
     DETAIL: (id: number) => `/invoices/${id}`,
+  },
+  // Image
+  IMAGE: {
+    UPLOAD: '/images/upload',
+    DELETE: (id: number) => `/images/${id}`,
   },
   // Payment
   PAYMENT: {

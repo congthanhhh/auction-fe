@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import MySessionsList from "@/components/auction/MySessionsList";
+import { CreateProductDialog } from "@/components/auction/CreateProductDialog";
+import { CreateSessionDialog } from "@/components/auction/CreateSessionDialog";
 import { auctionService } from "@/services/auctionService";
 import type { AuctionSessionResponse, AuctionStatus, PageResponse } from "@/types/auction";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SimplePagination } from "@/components/common/SimplePagination";
 
@@ -30,7 +29,6 @@ export default function MySessions() {
     const [page, setPage] = useState<number>(1);
     const [size] = useState<number>(10);
     const [statusFilter, setStatusFilter] = useState<"ALL" | AuctionStatus>("ALL");
-
     useEffect(() => {
         const allowed = requireAuth();
         if (!allowed) return;
@@ -139,70 +137,8 @@ export default function MySessions() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <Button size="sm" className="mt-4 sm:mt-0">
-                                    Tạo phiên mới
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Tạo phiên đấu giá mới</DialogTitle>
-                                    <DialogDescription>
-                                        Điền thông tin để tạo một phiên đấu giá mới. Logic lưu sẽ được thêm sau.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-4">
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="productId">Sản phẩm</Label>
-                                        <Input
-                                            id="productId"
-                                            type="number"
-                                            placeholder="Nhập ID sản phẩm"
-                                        />
-                                    </div>
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        <div className="space-y-1.5">
-                                            <Label htmlFor="create-startTime">Thời gian bắt đầu</Label>
-                                            <Input
-                                                id="create-startTime"
-                                                type="datetime-local"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <Label htmlFor="create-endTime">Thời gian kết thúc</Label>
-                                            <Input
-                                                id="create-endTime"
-                                                type="datetime-local"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        <div className="space-y-1.5">
-                                            <Label htmlFor="create-reservePrice">Giá chấp nhận bán</Label>
-                                            <Input
-                                                id="create-reservePrice"
-                                                type="number"
-                                                placeholder="Nhập giá chấp nhận bán"
-                                            />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <Label htmlFor="create-buyNowPrice">Giá mua ngay</Label>
-                                            <Input
-                                                id="create-buyNowPrice"
-                                                type="number"
-                                                placeholder="Nhập giá mua ngay (tuỳ chọn)"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                                <DialogFooter showCloseButton>
-                                    <Button type="button">
-                                        Tạo phiên
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                        <CreateProductDialog />
+                        <CreateSessionDialog />
                     </div>
                 </div>
 

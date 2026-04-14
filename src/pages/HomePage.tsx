@@ -3,15 +3,17 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import AuctionCard from '@/components/auction/AuctionCard';
-import { ArrowRight, Shirt, Monitor, Palette, Star, Home as HomeIcon, Music, Gamepad2, Truck, Zap, Clock } from 'lucide-react';
+import { ArrowRight, Truck, Zap, Clock } from 'lucide-react';
 import { auctionService } from '@/services/auctionService';
-import type { AuctionSessionResponse } from '@/types/auction';
+import { categoryService } from '@/services/categoryService';
+import type { AuctionSessionResponse, CategoryResponse } from '@/types/auction';
 import { calculateTimeRemaining } from '@/lib/utils';
 
 export default function HomePage() {
     const [featuredItems, setFeaturedItems] = useState<AuctionSessionResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [categories, setCategories] = useState<CategoryResponse[]>([]);
 
     useEffect(() => {
         const fetchActiveAuctions = async () => {
@@ -32,15 +34,39 @@ export default function HomePage() {
         fetchActiveAuctions();
     }, []);
 
-    const categories = [
-        { name: 'Clothing', icon: Shirt, link: '/categories/clothing' },
-        { name: 'Electronics', icon: Monitor, link: '/categories/electronics' },
-        { name: 'Art', icon: Palette, link: '/categories/art' },
-        { name: 'Collectibles', icon: Star, link: '/categories/collectibles' },
-        { name: 'For The Home', icon: HomeIcon, link: '/categories/home' },
-        { name: 'Musical Instruments', icon: Music, link: '/categories/music' },
-        { name: 'Toys & Games', icon: Gamepad2, link: '/categories/toys' },
-    ];
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await categoryService.getCategories(1, 20);
+                setCategories(response.data ?? []);
+            } catch (err) {
+                // eslint-disable-next-line no-console
+                console.error('Failed to fetch categories:', err);
+                setCategories([]);
+            }
+        };
+
+        fetchCategories();
+    }, []);
+
+    const categoryBgClasses = [
+        'bg-rose-50 border-rose-100',
+        'bg-orange-50 border-orange-100',
+        'bg-amber-50 border-amber-100',
+        'bg-emerald-50 border-emerald-100',
+        'bg-sky-50 border-sky-100',
+        'bg-indigo-50 border-indigo-100',
+        'bg-fuchsia-50 border-fuchsia-100',
+        'bg-pink-50 border-pink-100',
+        'bg-lime-50 border-lime-100',
+        'bg-cyan-50 border-cyan-100',
+        'bg-teal-50 border-teal-100',
+        'bg-slate-50 border-slate-200',
+    ] as const;
+
+    const getCategoryBgClass = (index: number) => {
+        return categoryBgClasses[index % categoryBgClasses.length];
+    };
 
     return (
         <div className="bg-white dark:bg-gray-900">
@@ -120,22 +146,21 @@ export default function HomePage() {
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5">
-                        {categories.map((category) => {
-                            const Icon = category.icon;
-                            return (
-                                <Card
-                                    key={category.name}
-                                    className="hover:shadow-lg hover:border-brand dark:hover:border-brand transition-all group"
-                                >
-                                    <Link to={category.link}>
-                                        <CardContent className="p-6 text-center">
-                                            <Icon className="h-12 w-12 mx-auto mb-3 text-muted-foreground group-hover:text-brand dark:group-hover:text-brand" />
-                                            <h3 className="font-semibold text-sm">{category.name}</h3>
-                                        </CardContent>
-                                    </Link>
-                                </Card>
-                            );
-                        })}
+                        {categories.slice(0, 12).map((category, index) => (
+                            <Card
+                                key={category.id}
+                                className={`group relative overflow-hidden border bg-background hover:border-brand hover:shadow-md transition-all ${getCategoryBgClass(index)}`}
+                            >
+                                <Link to={`/categories/${category.id}`}>
+                                    <CardContent className="p-5 text-center flex h-full flex-col items-center justify-center">
+                                        <h3 className="text-xl font-semibold text-foreground group-hover:text-brand line-clamp-2">
+                                            {category.name}
+                                        </h3>
+                                        <span className="mt-3 h-0.5 w-8 rounded-full bg-muted group-hover:bg-brand" />
+                                    </CardContent>
+                                </Link>
+                            </Card>
+                        ))}
                     </div>
                 </div>
             </div>

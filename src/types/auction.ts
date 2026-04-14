@@ -42,6 +42,11 @@ export interface CategoryResponse {
     description: string;
 }
 
+export interface CategoryRequest {
+    name: string;
+    description: string;
+}
+
 export interface ProductResponse {
     id: number;
     name: string;
@@ -54,6 +59,15 @@ export interface ProductResponse {
     attributes: string;
     isActive: boolean;
     images: Image[];
+}
+
+export interface ProductRequest {
+    name: string;
+    description?: string;
+    startPrice: number;
+    categoryId: number;
+    attributes?: string;
+    imageIds: number[];
 }
 
 export interface AuctionSessionResponse {

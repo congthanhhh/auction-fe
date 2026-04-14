@@ -1,12 +1,13 @@
 import { api } from './api';
 import { API_ENDPOINTS } from '@/constants/api';
 import type {
-    // AuctionSessionRequest,
+    AuctionSessionRequest,
     AuctionSessionResponse,
     AuctionStatus,
     PageResponse,
     UpdateAuctionSessionRequest,
 } from '@/types/auction';
+import type { InvoiceResponse } from '@/types/invoice';
 
 /**
  * Helper để unwrap response từ api instance
@@ -65,6 +66,12 @@ export const auctionService = {
         return unwrapApiResponse<PageResponse<AuctionSessionResponse>>(response);
     },
 
+    buyNow: async (id: number | string): Promise<InvoiceResponse> => {
+        const numericId = Number(id);
+        const response = await api.post(API_ENDPOINTS.AUCTION.BUY_NOW(numericId));
+        return unwrapApiResponse<InvoiceResponse>(response);
+    },
+
     cancelSession: async (id: number | string): Promise<AuctionSessionResponse> => {
         const numericId = Number(id);
         const response = await api.put(API_ENDPOINTS.AUCTION.CANCEL_SESSION(numericId));
@@ -80,5 +87,9 @@ export const auctionService = {
     updateSession: async (id: number | string, data: UpdateAuctionSessionRequest): Promise<void> => {
         const numericId = Number(id);
         await api.put(API_ENDPOINTS.AUCTION.UPDATE_SESSION(numericId), data);
+    },
+
+    createSession: async (data: AuctionSessionRequest): Promise<void> => {
+        await api.post(API_ENDPOINTS.AUCTION.CREATE_SESSION, data);
     },
 };

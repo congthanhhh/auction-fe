@@ -62,21 +62,25 @@ export default function AuctionCard({
                         {timeRemaining}
                     </span>
                     <Separator orientation="vertical" />
-                    <Button className='text-brand hover:text-brand-hover px-0'
-                        size="sm" variant="ghost"
-                    >
-                        Quick bid
-                    </Button>
+                    <Link to={`/auction/${id}`}>
+                        <Button className='text-brand hover:text-brand-hover px-0'
+                            size="sm" variant="ghost"
+                        >
+                            Quick bid
+                        </Button>
+                    </Link>
                     {isBuyNow && buyNowPrice && (
                         <>
                             <Separator orientation="vertical" />
-                            <Button
-                                className='text-brand hover:text-brand-hover px-0'
-                                size="sm"
-                                variant="ghost"
-                            >
-                                Buy it now
-                            </Button>
+                            <Link to={`/auction/${id}`} >
+                                <Button
+                                    className='text-brand hover:text-brand-hover px-0'
+                                    size="sm"
+                                    variant="ghost"
+                                >
+                                    Buy now
+                                </Button>
+                            </Link>
                         </>
                     )}
                 </div>
