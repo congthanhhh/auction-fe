@@ -25,8 +25,10 @@ import {
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
+import { categoryService } from '@/services/categoryService';
+import type { CategoryResponse } from '@/types/auction';
 
 export default function Header() {
     const navigate = useNavigate();
@@ -36,6 +38,9 @@ export default function Header() {
     const [searchExpanded, setSearchExpanded] = useState(false);
     const [categoryOpen, setCategoryOpen] = useState(false);
     const [myShopOpen, setMyShopOpen] = useState(false);
+    const [categories, setCategories] = useState<CategoryResponse[]>([]);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+    const [categoryError, setCategoryError] = useState<string | null>(null);
 
     const buildSignInLink = () => {
         if (location.pathname === '/signin') return '/signin';
@@ -51,6 +56,26 @@ export default function Header() {
         logout();
         navigate('/signin');
     };
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                setIsLoadingCategories(true);
+                setCategoryError(null);
+                const response = await categoryService.getCategories(1, 50);
+                setCategories(response.data ?? []);
+            } catch (err) {
+                // eslint-disable-next-line no-console
+                console.error('Failed to fetch categories in header:', err);
+                setCategories([]);
+                setCategoryError('Không tải được danh mục');
+            } finally {
+                setIsLoadingCategories(false);
+            }
+        };
+
+        fetchCategories();
+    }, []);
 
     // Get user initials for avatar
     const getUserInitials = () => {
@@ -152,41 +177,28 @@ export default function Header() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="w-72 h-96" align="start">
                                     <ScrollArea className="">
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/categories/clothing" className="px-4 py-2 text-xl cursor-pointer">
-                                                Clothing
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/categories/electronics" className="px-4 py-2 text-xl cursor-pointer">
-                                                Electronics
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/categories/art" className="px-4 py-2 text-xl cursor-pointer">
-                                                Art
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/categories/collectibles" className="px-4 py-2 text-xl cursor-pointer">
-                                                Collectibles
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/categories/home" className="px-4 py-2 text-xl cursor-pointer">
-                                                For The Home
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/categories/jewelry" className="px-4 py-2 text-xl cursor-pointer">
-                                                Jewelry & Gemstones
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/categories/toys" className="px-4 py-2 text-xl cursor-pointer">
-                                                Toys & Games
-                                            </Link>
-                                        </DropdownMenuItem>
+                                        {isLoadingCategories && (
+                                            <DropdownMenuItem disabled className="px-4 py-2 text-base">
+                                                Loading categories...
+                                            </DropdownMenuItem>
+                                        )}
+                                        {!isLoadingCategories && categoryError && (
+                                            <DropdownMenuItem disabled className="px-4 py-2 text-base text-red-500">
+                                                {categoryError}
+                                            </DropdownMenuItem>
+                                        )}
+                                        {!isLoadingCategories && !categoryError && categories.length === 0 && (
+                                            <DropdownMenuItem disabled className="px-4 py-2 text-base">
+                                                No categories found
+                                            </DropdownMenuItem>
+                                        )}
+                                        {!isLoadingCategories && !categoryError && categories.map((category) => (
+                                            <DropdownMenuItem asChild key={category.id}>
+                                                <Link to={`/categories/${category.id}`} className="px-4 py-2 text-xl cursor-pointer">
+                                                    {category.name}
+                                                </Link>
+                                            </DropdownMenuItem>
+                                        ))}
 
                                     </ScrollArea>
                                 </DropdownMenuContent>
@@ -194,7 +206,7 @@ export default function Header() {
 
                             {/* Feature */}
                             <Link
-                                to="/feature"
+                                to="/view-all-featured"
                                 className="bg-brand2 text-white uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center text-lg font-semibold"
                             >
                                 Feature
@@ -202,7 +214,7 @@ export default function Header() {
 
                             {/* Newly List */}
                             <Link
-                                to="/newly-list"
+                                to="#"
                                 className="bg-brand2 text-white uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center text-lg font-semibold"
                             >
                                 Newly List
@@ -339,27 +351,31 @@ export default function Header() {
                                                 </Button>
                                             </CollapsibleTrigger>
                                             <CollapsibleContent className="mt-2 space-y-1">
-                                                <Link to="/categories/clothing" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                    Clothing
-                                                </Link>
-                                                <Link to="/categories/electronics" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                    Electronics
-                                                </Link>
-                                                <Link to="/categories/art" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                    Art
-                                                </Link>
-                                                <Link to="/categories/collectibles" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                    Collectibles
-                                                </Link>
-                                                <Link to="/categories/home" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                    For The Home
-                                                </Link>
-                                                <Link to="/categories/jewelry" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                    Jewelry & Gemstones
-                                                </Link>
-                                                <Link to="/categories/toys" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg  hover:bg-accent rounded-md">
-                                                    Toys & Games
-                                                </Link>
+                                                {isLoadingCategories && (
+                                                    <p className="px-4 py-2 text-sm text-muted-foreground">
+                                                        Loading categories...
+                                                    </p>
+                                                )}
+                                                {!isLoadingCategories && categoryError && (
+                                                    <p className="px-4 py-2 text-sm text-red-500">
+                                                        {categoryError}
+                                                    </p>
+                                                )}
+                                                {!isLoadingCategories && !categoryError && categories.length === 0 && (
+                                                    <p className="px-4 py-2 text-sm text-muted-foreground">
+                                                        No categories found
+                                                    </p>
+                                                )}
+                                                {!isLoadingCategories && !categoryError && categories.map((category) => (
+                                                    <Link
+                                                        key={category.id}
+                                                        to={`/categories/${category.id}`}
+                                                        onClick={() => setMobileMenuOpen(false)}
+                                                        className="block px-4 py-2 text-lg hover:bg-accent rounded-md"
+                                                    >
+                                                        {category.name}
+                                                    </Link>
+                                                ))}
                                             </CollapsibleContent>
                                         </Collapsible>
 

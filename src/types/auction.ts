@@ -70,6 +70,17 @@ export interface ProductRequest {
     imageIds: number[];
 }
 
+export interface ProductSearchRequest {
+    keyword?: string;
+    categoryId?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    sort?: string;
+    status?: ProductStatus;
+    sellerId?: string;
+    isActive?: boolean;
+}
+
 export interface AuctionSessionResponse {
     id: number;
     startTime: string;

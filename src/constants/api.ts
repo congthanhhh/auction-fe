@@ -41,6 +41,7 @@ export const API_ENDPOINTS = {
     ROOT: '/products',
     BY_ID: (id: number) => `/products/${id}`,
     MY_PRODUCTS: '/products/my-products',
+    SEARCH: '/products/search',
   },
   // User
   USER: {

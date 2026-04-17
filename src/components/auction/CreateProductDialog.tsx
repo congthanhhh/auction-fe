@@ -105,7 +105,9 @@ export function CreateProductDialog({ onCreated }: CreateProductDialogProps) {
             };
 
             const created = await productService.createProduct(payload);
-            setProductSuccessMessage(`Tạo sản phẩm #${created.id} thành công.`);
+            setProductSuccessMessage(
+                `Tạo sản phẩm #${created.id} thành công. Sản phẩm đang ở trạng thái chờ duyệt (WAITING_FOR_APPROVAL).`,
+            );
 
             // Optional: reset form state after successful creation
             setProductName("");

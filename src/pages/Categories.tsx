@@ -84,21 +84,22 @@ export default function Categories() {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
                         {categories.map((category, index) => (
-                            <Card
-                                key={category.id}
-                                className={`h-full border bg-background/60 dark:bg-gray-900/60 hover:border-brand hover:shadow-md transition-all ${getCategoryBgClass(index)}`}
-                            >
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-base md:text-lg font-semibold line-clamp-2">
-                                        {category.name}
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <CardDescription className="text-xs md:text-sm text-muted-foreground whitespace-pre-line min-h-[3rem]">
-                                        {category.description || "No description provided."}
-                                    </CardDescription>
-                                </CardContent>
-                            </Card>
+                            <Link key={category.id} to={`/categories/${category.id}`}>
+                                <Card
+                                    className={`h-full border bg-background/60 dark:bg-gray-900/60 hover:border-brand hover:shadow-md transition-all ${getCategoryBgClass(index)}`}
+                                >
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-base md:text-lg font-semibold line-clamp-2">
+                                            {category.name}
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <CardDescription className="text-xs md:text-sm text-muted-foreground whitespace-pre-line min-h-[3rem]">
+                                            {category.description || "No description provided."}
+                                        </CardDescription>
+                                    </CardContent>
+                                </Card>
+                            </Link>
                         ))}
                     </div>
                 )}

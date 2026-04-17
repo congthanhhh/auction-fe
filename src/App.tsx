@@ -17,6 +17,7 @@ import { GoogleAuthCallback } from './pages/GoogleAuthCallback';
 import { useAuthStore } from './stores/authStore';
 import Detail from './components/auction/Detail';
 import Categories from './pages/Categories';
+import CategoryProducts from './pages/CategoryProducts';
 
 function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
@@ -39,6 +40,7 @@ function App() {
             <Route path="my-joined" element={<MyJoinedAuctions />} />
             <Route path="my-sessions" element={<MySessions />} />
             <Route path="categories" element={<Categories />} />
+            <Route path="categories/:id" element={<CategoryProducts />} />
             <Route path="view-all-featured" element={<ViewAll />} />
             <Route path="view-all-recommended" element={<Recommended />} />
             <Route path="auction/:id" element={<Detail />} />
