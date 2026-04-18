@@ -5,7 +5,6 @@ import { CreateSessionDialog } from "@/components/auction/CreateSessionDialog";
 import { auctionService } from "@/services/auctionService";
 import type { AuctionSessionResponse, AuctionStatus, PageResponse } from "@/types/auction";
 import { useRequireAuth } from "@/hooks/use-require-auth";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SimplePagination } from "@/components/common/SimplePagination";
 
@@ -117,7 +116,6 @@ export default function MySessions() {
                     </h1>
                     <div className="flex flex-wrap gap-3 text-sm items-center">
                         <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-muted-foreground">Trạng thái</Label>
                             <Select
                                 value={statusFilter}
                                 onValueChange={(value) => {
