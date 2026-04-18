@@ -29,6 +29,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { categoryService } from '@/services/categoryService';
 import type { CategoryResponse } from '@/types/auction';
+import { NotificationBell } from './NotificationBell';
 
 export default function Header() {
     const navigate = useNavigate();
@@ -116,7 +117,9 @@ export default function Header() {
                         <div className="flex items-center gap-2">
                             <ThemeToggle />
                             {isAuthenticated ? (
-                                <DropdownMenu>
+                                <>
+                                    <NotificationBell />
+                                    <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" className="flex items-center gap-2 hover:bg-brand/10">
                                             <Avatar className="h-8 w-8">
@@ -151,6 +154,7 @@ export default function Header() {
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
+                                </>
                             ) : (
                                 <Link to={signInHref}>
                                     <Button className="bg-brand font-bold hover:bg-brand-hover dark:bg-brand-hover dark:hover:bg-brand">
@@ -439,6 +443,7 @@ export default function Header() {
                             >
                                 {searchExpanded ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
                             </Button>
+                            {isAuthenticated && <NotificationBell />}
                             <ThemeToggle />
                         </div>
                     </div>

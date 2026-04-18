@@ -71,6 +71,12 @@ export const API_ENDPOINTS = {
     VN_PAY: '/payments/vn-pay',
     VN_PAY_CALLBACK: '/payments/vn-pay-callback',
   },
+  // Notification
+  NOTIFICATION: {
+    ROOT: '/notifications',
+    READ: (id: number) => `/notifications/${id}/read`,
+    UNREAD_COUNT: '/notifications/unread-count',
+  },
 } as const;
 
 export const GOOGLE_OAUTH_CONFIG = {
