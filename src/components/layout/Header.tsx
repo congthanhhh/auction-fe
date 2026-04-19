@@ -120,40 +120,40 @@ export default function Header() {
                                 <>
                                     <NotificationBell />
                                     <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="flex items-center gap-2 hover:bg-brand/10">
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarFallback className="bg-brand text-white text-sm">
-                                                    {getUserInitials()}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <span className="font-semibold text-brand2 dark:text-brand">
-                                                {user?.username}
-                                            </span>
-                                            <ChevronDown className="h-4 w-4 text-gray-500" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-56">
-                                        <DropdownMenuLabel>
-                                            <div className="flex flex-col space-y-1">
-                                                <p className="text-sm font-medium">{user?.username}</p>
-                                                <p className="text-xs text-gray-500">{user?.email}</p>
-                                            </div>
-                                        </DropdownMenuLabel>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/profile" className="cursor-pointer">
-                                                <User className="mr-2 h-4 w-4" />
-                                                Profile
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600">
-                                            <LogOut className="mr-2 h-4 w-4" />
-                                            Logout
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="flex items-center gap-2 hover:bg-brand/10">
+                                                <Avatar className="h-8 w-8">
+                                                    <AvatarFallback className="bg-brand text-white text-sm">
+                                                        {getUserInitials()}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <span className="font-semibold text-brand2 dark:text-brand">
+                                                    {user?.username}
+                                                </span>
+                                                <ChevronDown className="h-4 w-4 text-gray-500" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-56">
+                                            <DropdownMenuLabel>
+                                                <div className="flex flex-col space-y-1">
+                                                    <p className="text-sm font-medium">{user?.username}</p>
+                                                    <p className="text-xs text-gray-500">{user?.email}</p>
+                                                </div>
+                                            </DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem asChild>
+                                                <Link to="/profile" className="cursor-pointer">
+                                                    <User className="mr-2 h-4 w-4" />
+                                                    Profile
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600">
+                                                <LogOut className="mr-2 h-4 w-4" />
+                                                Logout
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </>
                             ) : (
                                 <Link to={signInHref}>
@@ -224,59 +224,42 @@ export default function Header() {
                                 Newly List
                             </Link>
 
-                            {/* MyShop - DropdownMenu */}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="text-white bg-brand2 uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center gap-2 text-lg font-semibold w-full">
-                                        My Auction
-                                        <ChevronDown className="h-4 w-4" />
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-72" align="start">
-                                    <ScrollArea className="h-72">
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/profile" className="px-4 py-2 text-xl cursor-pointer">
-                                                Personal Information
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/my-joined" className="px-4 py-2 text-xl cursor-pointer">
-                                                My Joined Auctions
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/my-sessions" className="px-4 py-2 text-xl cursor-pointer">
-                                                My Shop
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        {/* <DropdownMenuItem asChild>
-                                            <Link to="/myshop/won" className="px-4 py-2 text-xl cursor-pointer">
-                                                Closed auctions
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/myshop/won" className="px-4 py-2 text-xl cursor-pointer">
-                                                Personal Shopper
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/myshop/won" className="px-4 py-2 text-xl cursor-pointer">
-                                                Favorites
-                                            </Link>
-                                        </DropdownMenuItem> */}
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/my-invoices" className="px-4 py-2 text-xl cursor-pointer">
-                                                My Orders
-                                            </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link to="/my-sales" className="px-4 py-2 text-xl cursor-pointer">
-                                                My Sales
-                                            </Link>
-                                        </DropdownMenuItem>
-                                    </ScrollArea>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            {/* My Auction - DropdownMenu */}
+                            {isAuthenticated && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button className="text-white bg-brand2 uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center gap-2 text-lg font-semibold w-full">
+                                            My Auction
+                                            <ChevronDown className="h-4 w-4" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-72" align="start">
+                                        <ScrollArea className="h-72">
+                                            <DropdownMenuItem asChild>
+                                                <Link to="/my-joined" className="px-4 py-2 text-xl cursor-pointer">
+                                                    My Joined Auctions
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link to="/my-sessions" className="px-4 py-2 text-xl cursor-pointer">
+                                                    My Auction Sessions
+                                                </Link>
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuItem asChild>
+                                                <Link to="/my-invoices" className="px-4 py-2 text-xl cursor-pointer">
+                                                    My Orders
+                                                </Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link to="/my-sales" className="px-4 py-2 text-xl cursor-pointer">
+                                                    My Sales
+                                                </Link>
+                                            </DropdownMenuItem>
+                                        </ScrollArea>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
 
                             {/* Stories */}
                             <Link
@@ -396,35 +379,31 @@ export default function Header() {
                                             <Button variant="outline" className='w-full text-lg justify-start'>Newly List</Button>
                                         </Link>
 
-                                        {/* MyShop - Collapsible */}
-                                        <Collapsible open={myShopOpen} onOpenChange={setMyShopOpen}>
-                                            <CollapsibleTrigger asChild>
-                                                <Button variant="outline" className="w-full text-lg justify-between">
-                                                    MyShop
-                                                    <ChevronDown className={`h-4 w-4 transition-transform ${myShopOpen ? 'rotate-180' : ''}`} />
-                                                </Button>
-                                            </CollapsibleTrigger>
-                                            <CollapsibleContent className="mt-2 space-y-1">
-                                                <Link to="/myshop/selling" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                    My Selling Items
-                                                </Link>
-                                                <Link to="/myshop/bidding" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                    My Bidding Items
-                                                </Link>
-                                                <Link to="/myshop/watchlist" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                    My Watchlist
-                                                </Link>
-                                                <Link to="/myshop/won" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                    Items Won
-                                                </Link>
-                                                <Link to="/myshop/orders" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                    My Orders
-                                                </Link>
-                                                <Link to="/my-sales" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                    My Sales
-                                                </Link>
-                                            </CollapsibleContent>
-                                        </Collapsible>
+                                        {/* My Auction - Collapsible */}
+                                        {isAuthenticated && (
+                                            <Collapsible open={myShopOpen} onOpenChange={setMyShopOpen}>
+                                                <CollapsibleTrigger asChild>
+                                                    <Button variant="outline" className="w-full text-lg justify-between">
+                                                        My Auction
+                                                        <ChevronDown className={`h-4 w-4 transition-transform ${myShopOpen ? 'rotate-180' : ''}`} />
+                                                    </Button>
+                                                </CollapsibleTrigger>
+                                                <CollapsibleContent className="mt-2 space-y-1">
+                                                    <Link to="/my-joined" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
+                                                        My Joined Auctions
+                                                    </Link>
+                                                    <Link to="/my-sessions" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
+                                                        My Auction Sessions
+                                                    </Link>
+                                                    <Link to="/my-invoices" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
+                                                        My Orders
+                                                    </Link>
+                                                    <Link to="/my-sales" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
+                                                        My Sales
+                                                    </Link>
+                                                </CollapsibleContent>
+                                            </Collapsible>
+                                        )}
 
                                         <Link to="/stories" onClick={() => setMobileMenuOpen(false)}>
                                             <Button variant="outline" className="w-full text-lg justify-start">

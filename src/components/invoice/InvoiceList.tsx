@@ -9,16 +9,19 @@ import { invoiceStatusLabels, invoiceStatusVariants, invoiceTypeLabels } from "@
 
 interface InvoiceListProps {
     invoices: InvoiceResponse[];
+    isSeller?: boolean;
 }
 
-export default function InvoiceList({ invoices }: InvoiceListProps) {
+export default function InvoiceList({ invoices, isSeller }: InvoiceListProps) {
     const navigate = useNavigate();
 
     return (
         <div className="w-full">
             <Card className="shadow-sm">
                 <CardHeader>
-                    <CardTitle className="text-xl font-semibold text-brand2">Đơn hàng của tôi</CardTitle>
+                    <CardTitle className="text-xl font-semibold text-brand2">
+                        {isSeller ? "Đơn bán của tôi" : "Đơn hàng của tôi"}
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
                     {invoices.length === 0 ? (
@@ -70,7 +73,9 @@ export default function InvoiceList({ invoices }: InvoiceListProps) {
                                                                 {invoice.product.name}
                                                             </p>
                                                             <p className="text-xs text-muted-foreground">
-                                                                Người bán: {invoice.product.seller.username}
+                                                                {isSeller 
+                                                                    ? `Người mua: ${invoice.user.username}` 
+                                                                    : `Người bán: ${invoice.product.seller.username}`}
                                                             </p>
                                                         </div>
                                                     </div>

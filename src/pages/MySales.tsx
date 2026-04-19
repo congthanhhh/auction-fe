@@ -4,20 +4,9 @@ import { invoiceService } from "@/services/invoiceService";
 import type { InvoicePageResponse, InvoiceStatus, InvoiceType } from "@/types/invoice";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { SimplePagination } from "@/components/common/SimplePagination";
-
-const statusFilterOptions: { value: "ALL" | InvoiceStatus; label: string }[] = [
-    { value: "ALL", label: "Tất cả trạng thái" },
-    { value: "PENDING", label: "Chờ thanh toán" },
-    { value: "PAID", label: "Đã thanh toán" },
-    { value: "SHIPPING", label: "Đang giao" },
-    { value: "COMPLETED", label: "Hoàn thành" },
-    { value: "DISPUTE", label: "Khiếu nại" },
-    { value: "CANCELLED_NON_PAYMENT", label: "Hủy (bùng hàng)" },
-    { value: "CANCELLED_BY_SELLER", label: "Hủy bởi người bán" },
-    { value: "REFUNDED", label: "Đã hoàn tiền" },
-];
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Store } from "lucide-react";
 
 const typeFilterOptions: { value: "ALL" | InvoiceType; label: string }[] = [
     { value: "ALL", label: "Tất cả loại" },
@@ -88,36 +77,19 @@ export default function MySales() {
     };
 
     return (
-        <div className="bg-gray-50 dark:bg-gray-950 py-8">
-            <div className="container mx-auto px-4 space-y-4">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <h1 className="text-2xl font-bold text-brand2 dark:text-white">
-                        Đơn bán của tôi
-                    </h1>
+        <div className="bg-gray-50 dark:bg-gray-950 py-8 min-h-screen">
+            <div className="container mx-auto px-4 space-y-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="bg-brand/10 p-2 rounded-full">
+                            <Store className="h-6 w-6 text-brand" />
+                        </div>
+                        <h1 className="text-2xl font-bold text-brand2 dark:text-white">
+                            Quản lý Đơn Bán
+                        </h1>
+                    </div>
                     <div className="flex flex-wrap gap-3 text-sm items-center">
                         <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-muted-foreground">Trạng thái</Label>
-                            <Select
-                                value={statusFilter}
-                                onValueChange={(value) => {
-                                    setStatusFilter(value as any);
-                                    setPage(1);
-                                }}
-                            >
-                                <SelectTrigger size="sm" className="min-w-40">
-                                    <SelectValue placeholder="Lọc theo trạng thái" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {statusFilterOptions.map((opt) => (
-                                        <SelectItem key={opt.value} value={opt.value}>
-                                            {opt.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-muted-foreground">Loại hóa đơn</Label>
                             <Select
                                 value={typeFilter}
                                 onValueChange={(value) => {
@@ -140,6 +112,18 @@ export default function MySales() {
                     </div>
                 </div>
 
+                <Tabs defaultValue="ALL" value={statusFilter} onValueChange={(value) => { setStatusFilter(value as any); setPage(1); }} className="w-full">
+                    <TabsList className="w-full flex justify-start overflow-x-auto h-auto p-1 bg-white dark:bg-gray-900 border rounded-lg">
+                        <TabsTrigger value="ALL" className="py-2.5 data-[state=active]:bg-brand/10 data-[state=active]:text-brand">Tất cả</TabsTrigger>
+                        <TabsTrigger value="PENDING" className="py-2.5 data-[state=active]:bg-brand/10 data-[state=active]:text-brand">Chờ thanh toán</TabsTrigger>
+                        <TabsTrigger value="PAID" className="py-2.5 data-[state=active]:bg-brand/10 data-[state=active]:text-brand">Chờ giao hàng</TabsTrigger>
+                        <TabsTrigger value="SHIPPING" className="py-2.5 data-[state=active]:bg-brand/10 data-[state=active]:text-brand">Đang giao</TabsTrigger>
+                        <TabsTrigger value="COMPLETED" className="py-2.5 data-[state=active]:bg-brand/10 data-[state=active]:text-brand">Hoàn thành</TabsTrigger>
+                        <TabsTrigger value="DISPUTE" className="py-2.5 data-[state=active]:bg-brand/10 data-[state=active]:text-brand">Khiếu nại</TabsTrigger>
+                        <TabsTrigger value="CANCELLED_NON_PAYMENT" className="py-2.5 data-[state=active]:bg-brand/10 data-[state=active]:text-brand">Đã hủy</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+
                 {isLoading && (
                     <p className="text-sm text-muted-foreground">Đang tải danh sách đơn bán...</p>
                 )}
@@ -148,7 +132,7 @@ export default function MySales() {
                 )}
 
                 {!isLoading && !error && (
-                    <InvoiceList invoices={pageData?.data ?? []} />
+                    <InvoiceList invoices={pageData?.data ?? []} isSeller={true} />
                 )}
 
                 {!isLoading && !error && totalPages > 1 && (

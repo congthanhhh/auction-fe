@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Loader2, Receipt, CreditCard, Truck, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 
 interface InvoiceDetailProps {
     invoice: InvoiceResponse;
@@ -86,8 +86,26 @@ export default function InvoiceDetail({
             .join(", ")
         : invoice.shippingAddress;
 
+    const getStepperStatus = () => {
+        if (invoice.status === "PENDING") return 0;
+        if (invoice.status === "PAID") return 1;
+        if (invoice.status === "SHIPPING") return 2;
+        if (invoice.status === "COMPLETED") return 3;
+        return -1; // CANCELLED, REFUNDED, DISPUTE
+    };
+
+    const currentStep = getStepperStatus();
+    const isErrorState = invoice.status === "DISPUTE" || invoice.status.startsWith("CANCELLED") || invoice.status === "REFUNDED";
+
+    const steps = [
+        { id: 0, title: "Chờ thanh toán", icon: Receipt },
+        { id: 1, title: "Đã thanh toán", icon: CreditCard },
+        { id: 2, title: "Đang giao", icon: Truck },
+        { id: 3, title: "Hoàn thành", icon: CheckCircle2 },
+    ];
+
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <Card className="shadow-sm">
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
@@ -123,7 +141,48 @@ export default function InvoiceDetail({
                         </p>
                     </div>
                 </CardHeader>
-                <CardContent>
+                
+                <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-900/50 border-y">
+                    {isErrorState ? (
+                        <div className="flex flex-col items-center justify-center py-6 text-center">
+                            {invoice.status === "DISPUTE" ? (
+                                <AlertCircle className="h-12 w-12 text-amber-500 mb-2" />
+                            ) : (
+                                <XCircle className="h-12 w-12 text-red-500 mb-2" />
+                            )}
+                            <h3 className="text-lg font-semibold">{invoiceStatusLabels[invoice.status]}</h3>
+                            <p className="text-sm text-muted-foreground mt-1">Đơn hàng này không thể hoàn thành.</p>
+                        </div>
+                    ) : (
+                        <div className="relative">
+                            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-200 dark:bg-gray-700 -translate-y-1/2 rounded" />
+                            <div className="absolute top-1/2 left-0 h-0.5 bg-brand -translate-y-1/2 rounded transition-all duration-500" style={{ width: `${currentStep >= 0 ? (currentStep / (steps.length - 1)) * 100 : 0}%` }} />
+                            
+                            <div className="relative flex justify-between w-full">
+                                {steps.map((step) => {
+                                    const Icon = step.icon;
+                                    const isActive = currentStep >= step.id;
+                                    return (
+                                        <div key={step.id} className="flex flex-col items-center gap-2">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 transition-colors duration-300 border-2 ${
+                                                isActive 
+                                                    ? "bg-brand text-white border-brand shadow-sm" 
+                                                    : "bg-white dark:bg-gray-800 text-gray-400 border-gray-200 dark:border-gray-700"
+                                            }`}>
+                                                <Icon className="w-5 h-5" />
+                                            </div>
+                                            <span className={`text-xs font-medium text-center max-w-20 ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
+                                                {step.title}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <CardContent className="pt-6">
                     <div className="grid gap-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
                         {/* Sản phẩm & giá */}
                         <div className="space-y-4">
@@ -226,11 +285,10 @@ export default function InvoiceDetail({
 
                             <Separator />
 
-                            <div className="space-y-2">
-                                <h3 className="text-sm font-semibold text-foreground">Thanh toán</h3>
-                                <p className="text-xs text-muted-foreground">
-                                    Trạng thái: {invoiceStatusLabels[invoice.status]}
-                                </p>
+                            <div className="space-y-4 p-4 bg-muted/30 rounded-lg border border-brand/20">
+                                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4 text-brand" /> Thao tác
+                                </h3>
                                 <div className="mt-1 flex flex-col gap-2 sm:flex-row">
                                     {isSeller ? (
                                         <>
