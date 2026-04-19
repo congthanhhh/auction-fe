@@ -8,12 +8,14 @@ import { auctionService } from '@/services/auctionService';
 import { categoryService } from '@/services/categoryService';
 import type { AuctionSessionResponse, CategoryResponse } from '@/types/auction';
 import { calculateTimeRemaining } from '@/lib/utils';
+import { useAuctionDetailStore } from '@/stores/auctionDetailStore';
 
 export default function HomePage() {
     const [featuredItems, setFeaturedItems] = useState<AuctionSessionResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [categories, setCategories] = useState<CategoryResponse[]>([]);
+    const { bidCount } = useAuctionDetailStore();
 
     useEffect(() => {
         const fetchActiveAuctions = async () => {
@@ -114,7 +116,6 @@ export default function HomePage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {featuredItems.map((auction) => {
                             const hasBids = auction.currentPrice > auction.startPrice || auction.highestBidder !== null;
-                            const bidCount = hasBids ? 1 : 0; // Backend should provide actual bid count
 
                             return (
                                 <AuctionCard
@@ -124,6 +125,7 @@ export default function HomePage() {
                                     image={auction.product.images[0]?.url || "https://picsum.photos/200"}
                                     currentBid={auction.currentPrice}
                                     bids={bidCount}
+                                    productId={auction.product.id}
                                     timeRemaining={calculateTimeRemaining(auction.endTime)}
                                     isBuyNow={!!auction.buyNowPrice && !hasBids}
                                     buyNowPrice={auction.buyNowPrice || undefined}
@@ -253,6 +255,7 @@ export default function HomePage() {
                                         image={auction.product.images[0]?.url || 'https://placehold.co/400x300/e0e0e0/666?text=No+Image'}
                                         currentBid={auction.currentPrice}
                                         bids={bidCount}
+                                        productId={auction.product.id}
                                         timeRemaining={calculateTimeRemaining(auction.endTime)}
                                         isBuyNow={!!auction.buyNowPrice && !hasBids}
                                         buyNowPrice={auction.buyNowPrice || undefined}

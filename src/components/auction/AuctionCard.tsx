@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '../ui/separator';
 import { formatCurrency } from '@/lib/utils';
+import { bidService } from '@/services/bidService';
+import { useEffect, useState } from 'react';
 // use skeleton for loading state
 
 interface AuctionCardProps {
@@ -15,6 +17,7 @@ interface AuctionCardProps {
     timeRemaining: string;
     isBuyNow?: boolean;
     buyNowPrice?: number;
+    productId?: number;
 }
 
 export default function AuctionCard({
@@ -26,7 +29,23 @@ export default function AuctionCard({
     timeRemaining,
     isBuyNow = false,
     buyNowPrice,
+    productId,
 }: AuctionCardProps) {
+    const [actualBids, setActualBids] = useState<number>(bids);
+
+    useEffect(() => {
+        const fetchBids = async () => {
+            if (!productId) return;
+            try {
+                const count = await bidService.getBidCount(productId);
+                setActualBids(count);
+            } catch (error) {
+                // Ignore error, fallback to default bids prop
+            }
+        };
+        fetchBids();
+    }, [productId]);
+
     return (
         <Card className="overflow-hidden shadow-xs hover:shadow-md transition-all p-0 group rounded-none border-white dark:border-gray-700 gap-2">
             <Link to={`/auction/${id}`} className="block relative">
@@ -55,7 +74,7 @@ export default function AuctionCard({
                     </p>
                 </div>
                 <div className="flex items-center h-5 text-sm text-gray-600 dark:text-gray-400 gap-2">
-                    <span>Bids: {bids}</span>
+                    <span>Bids: {actualBids}</span>
                     <Separator orientation="vertical" />
                     <span className="flex items-center">
                         <Clock className="h-3 w-3" />

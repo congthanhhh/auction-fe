@@ -30,11 +30,13 @@ import { useAuthStore } from '@/stores/authStore';
 import { categoryService } from '@/services/categoryService';
 import type { CategoryResponse } from '@/types/auction';
 import { NotificationBell } from './NotificationBell';
+import { useRequireAuth } from '@/hooks/use-require-auth';
 
 export default function Header() {
     const navigate = useNavigate();
     const location = useLocation();
     const { isAuthenticated, user, logout } = useAuthStore();
+    const requireAuth = useRequireAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchExpanded, setSearchExpanded] = useState(false);
     const [categoryOpen, setCategoryOpen] = useState(false);
@@ -225,41 +227,88 @@ export default function Header() {
                             </Link>
 
                             {/* My Auction - DropdownMenu */}
-                            {isAuthenticated && (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <button className="text-white bg-brand2 uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center gap-2 text-lg font-semibold w-full">
-                                            My Auction
-                                            <ChevronDown className="h-4 w-4" />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-72" align="start">
-                                        <ScrollArea className="h-72">
-                                            <DropdownMenuItem asChild>
-                                                <Link to="/my-joined" className="px-4 py-2 text-xl cursor-pointer">
-                                                    My Joined Auctions
-                                                </Link>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem asChild>
-                                                <Link to="/my-sessions" className="px-4 py-2 text-xl cursor-pointer">
-                                                    My Auction Sessions
-                                                </Link>
-                                            </DropdownMenuItem>
-
-                                            <DropdownMenuItem asChild>
-                                                <Link to="/my-invoices" className="px-4 py-2 text-xl cursor-pointer">
-                                                    My Orders
-                                                </Link>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem asChild>
-                                                <Link to="/my-sales" className="px-4 py-2 text-xl cursor-pointer">
-                                                    My Sales
-                                                </Link>
-                                            </DropdownMenuItem>
-                                        </ScrollArea>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            )}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="text-white bg-brand2 uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center gap-2 text-lg font-semibold w-full">
+                                        My Auction
+                                        <ChevronDown className="h-4 w-4" />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-72" align="start">
+                                    <ScrollArea className="h-72">
+                                        <DropdownMenuItem asChild>
+                                            <Link
+                                                to="/profile"
+                                                className="px-4 py-2 text-xl cursor-pointer"
+                                                onClick={(e) => {
+                                                    if (!isAuthenticated) {
+                                                        e.preventDefault();
+                                                        requireAuth();
+                                                    }
+                                                }}
+                                            >
+                                                My Profile
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link
+                                                to="/my-joined"
+                                                className="px-4 py-2 text-xl cursor-pointer"
+                                                onClick={(e) => {
+                                                    if (!isAuthenticated) {
+                                                        e.preventDefault();
+                                                        requireAuth();
+                                                    }
+                                                }}
+                                            >
+                                                My Joined Auctions
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link
+                                                to="/my-sessions"
+                                                className="px-4 py-2 text-xl cursor-pointer"
+                                                onClick={(e) => {
+                                                    if (!isAuthenticated) {
+                                                        e.preventDefault();
+                                                        requireAuth();
+                                                    }
+                                                }}
+                                            >
+                                                My Auction Sessions
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link
+                                                to="/my-invoices"
+                                                className="px-4 py-2 text-xl cursor-pointer"
+                                                onClick={(e) => {
+                                                    if (!isAuthenticated) {
+                                                        e.preventDefault();
+                                                        requireAuth();
+                                                    }
+                                                }}
+                                            >
+                                                My Orders
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link
+                                                to="/my-sales"
+                                                className="px-4 py-2 text-xl cursor-pointer"
+                                                onClick={(e) => {
+                                                    if (!isAuthenticated) {
+                                                        e.preventDefault();
+                                                        requireAuth();
+                                                    }
+                                                }}
+                                            >
+                                                My Sales
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </ScrollArea>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
 
                             {/* Stories */}
                             <Link
@@ -380,30 +429,56 @@ export default function Header() {
                                         </Link>
 
                                         {/* My Auction - Collapsible */}
-                                        {isAuthenticated && (
-                                            <Collapsible open={myShopOpen} onOpenChange={setMyShopOpen}>
-                                                <CollapsibleTrigger asChild>
-                                                    <Button variant="outline" className="w-full text-lg justify-between">
-                                                        My Auction
-                                                        <ChevronDown className={`h-4 w-4 transition-transform ${myShopOpen ? 'rotate-180' : ''}`} />
-                                                    </Button>
-                                                </CollapsibleTrigger>
-                                                <CollapsibleContent className="mt-2 space-y-1">
-                                                    <Link to="/my-joined" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                        My Joined Auctions
-                                                    </Link>
-                                                    <Link to="/my-sessions" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                        My Auction Sessions
-                                                    </Link>
-                                                    <Link to="/my-invoices" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                        My Orders
-                                                    </Link>
-                                                    <Link to="/my-sales" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
-                                                        My Sales
-                                                    </Link>
-                                                </CollapsibleContent>
-                                            </Collapsible>
-                                        )}
+                                        <Collapsible open={myShopOpen} onOpenChange={setMyShopOpen}>
+                                            <CollapsibleTrigger asChild>
+                                                <Button variant="outline" className="w-full text-lg justify-between">
+                                                    My Auction
+                                                    <ChevronDown className={`h-4 w-4 transition-transform ${myShopOpen ? 'rotate-180' : ''}`} />
+                                                </Button>
+                                            </CollapsibleTrigger>
+                                            <CollapsibleContent className="mt-2 space-y-1">
+                                                <Link
+                                                    to="/my-joined"
+                                                    onClick={(e) => {
+                                                        setMobileMenuOpen(false);
+                                                        if (!isAuthenticated) { e.preventDefault(); requireAuth(); }
+                                                    }}
+                                                    className="block px-4 py-2 text-lg hover:bg-accent rounded-md"
+                                                >
+                                                    My Joined Auctions
+                                                </Link>
+                                                <Link
+                                                    to="/my-sessions"
+                                                    onClick={(e) => {
+                                                        setMobileMenuOpen(false);
+                                                        if (!isAuthenticated) { e.preventDefault(); requireAuth(); }
+                                                    }}
+                                                    className="block px-4 py-2 text-lg hover:bg-accent rounded-md"
+                                                >
+                                                    My Auction Sessions
+                                                </Link>
+                                                <Link
+                                                    to="/my-invoices"
+                                                    onClick={(e) => {
+                                                        setMobileMenuOpen(false);
+                                                        if (!isAuthenticated) { e.preventDefault(); requireAuth(); }
+                                                    }}
+                                                    className="block px-4 py-2 text-lg hover:bg-accent rounded-md"
+                                                >
+                                                    My Orders
+                                                </Link>
+                                                <Link
+                                                    to="/my-sales"
+                                                    onClick={(e) => {
+                                                        setMobileMenuOpen(false);
+                                                        if (!isAuthenticated) { e.preventDefault(); requireAuth(); }
+                                                    }}
+                                                    className="block px-4 py-2 text-lg hover:bg-accent rounded-md"
+                                                >
+                                                    My Sales
+                                                </Link>
+                                            </CollapsibleContent>
+                                        </Collapsible>
 
                                         <Link to="/stories" onClick={() => setMobileMenuOpen(false)}>
                                             <Button variant="outline" className="w-full text-lg justify-start">
