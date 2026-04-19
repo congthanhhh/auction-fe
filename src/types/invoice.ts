@@ -49,3 +49,8 @@ export interface InvoiceResponse {
 }
 
 export type InvoicePageResponse = PageResponse<InvoiceResponse>;
+
+export interface ShipInvoiceRequest {
+    trackingCode: string;
+    carrier?: string;
+}

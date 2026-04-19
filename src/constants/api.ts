@@ -59,7 +59,12 @@ export const API_ENDPOINTS = {
   // Invoice
   INVOICE: {
     MY_INVOICES: '/invoices/my-invoices',
+    MY_SALES: '/invoices/my-sales',
     DETAIL: (id: number) => `/invoices/${id}`,
+    SHIP: (id: number) => `/invoices/${id}/ship`,
+    CONFIRM: (id: number) => `/invoices/${id}/confirm`,
+    DISPUTE: (id: number) => `/invoices/${id}/dispute`,
+    REPORT_NONPAYMENT: (id: number) => `/invoices/${id}/report-nonpayment`,
   },
   // Image
   IMAGE: {

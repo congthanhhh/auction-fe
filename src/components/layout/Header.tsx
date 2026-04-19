@@ -269,6 +269,11 @@ export default function Header() {
                                                 My Orders
                                             </Link>
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link to="/my-sales" className="px-4 py-2 text-xl cursor-pointer">
+                                                My Sales
+                                            </Link>
+                                        </DropdownMenuItem>
                                     </ScrollArea>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -414,6 +419,9 @@ export default function Header() {
                                                 </Link>
                                                 <Link to="/myshop/orders" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
                                                     My Orders
+                                                </Link>
+                                                <Link to="/my-sales" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2 text-lg hover:bg-accent rounded-md">
+                                                    My Sales
                                                 </Link>
                                             </CollapsibleContent>
                                         </Collapsible>

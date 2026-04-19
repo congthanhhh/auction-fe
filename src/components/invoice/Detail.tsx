@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { InvoiceResponse } from "@/types/invoice";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,10 @@ import { formatCurrency } from "@/lib/utils";
 import { invoiceStatusLabels, invoiceStatusVariants, invoiceTypeLabels } from "@/types/invoice-labels";
 import type { AddressResponse } from "@/types/user";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 interface InvoiceDetailProps {
     invoice: InvoiceResponse;
@@ -17,6 +22,11 @@ interface InvoiceDetailProps {
     selectedAddress?: AddressResponse;
     addresses?: AddressResponse[];
     onChangeAddress?: (addressId: number) => void;
+    isSeller?: boolean;
+    onShip?: (trackingCode: string, carrier: string) => Promise<void>;
+    onConfirmReceive?: () => Promise<void>;
+    onReportNonpayment?: () => Promise<void>;
+    onDispute?: () => Promise<void>;
 }
 
 export default function InvoiceDetail({
@@ -27,7 +37,40 @@ export default function InvoiceDetail({
     selectedAddress,
     addresses,
     onChangeAddress,
+    isSeller,
+    onShip,
+    onConfirmReceive,
+    onReportNonpayment,
+    onDispute,
 }: InvoiceDetailProps) {
+    const [isShipDialogOpen, setIsShipDialogOpen] = useState(false);
+    const [trackingCode, setTrackingCode] = useState("");
+    const [carrier, setCarrier] = useState("");
+    const [isActionLoading, setIsActionLoading] = useState(false);
+
+    const handleShipSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!trackingCode) return;
+        try {
+            setIsActionLoading(true);
+            if (onShip) {
+                await onShip(trackingCode, carrier);
+                setIsShipDialogOpen(false);
+            }
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
+    const handleAction = async (actionFn?: () => Promise<void>) => {
+        if (!actionFn) return;
+        try {
+            setIsActionLoading(true);
+            await actionFn();
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
     const firstImage = invoice.product.images[0]?.url;
 
     const canPay = invoice.status === "PENDING";
@@ -188,25 +231,98 @@ export default function InvoiceDetail({
                                 <p className="text-xs text-muted-foreground">
                                     Trạng thái: {invoiceStatusLabels[invoice.status]}
                                 </p>
-                                {canPay ? (
-                                    <>
-                                        <div className="mt-1 flex flex-col gap-2 sm:flex-row">
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                className="flex-1 bg-brand text-white"
-                                                disabled={isPaying}
-                                                onClick={onPay}
-                                            >
-                                                {isPaying ? "Đang xử lý..." : "Thanh toán qua VNPay"}
-                                            </Button>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <p className="text-[11px] text-muted-foreground">
-                                        Bạn chỉ có thể thanh toán khi đơn hàng ở trạng thái "Chờ thanh toán".
-                                    </p>
-                                )}
+                                <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+                                    {isSeller ? (
+                                        <>
+                                            {invoice.status === "PAID" && (
+                                                <Dialog open={isShipDialogOpen} onOpenChange={setIsShipDialogOpen}>
+                                                    <DialogTrigger asChild>
+                                                        <Button size="sm" className="flex-1 bg-brand text-white">Xác nhận gửi hàng</Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent>
+                                                        <DialogHeader>
+                                                            <DialogTitle>Thông tin giao hàng</DialogTitle>
+                                                            <DialogDescription>
+                                                                Nhập mã vận đơn và tên đơn vị vận chuyển sau khi bạn đã gửi hàng cho bưu cục.
+                                                            </DialogDescription>
+                                                        </DialogHeader>
+                                                        <form onSubmit={handleShipSubmit} className="space-y-4">
+                                                            <div className="space-y-2">
+                                                                <Label>Mã vận đơn (Tracking Code) *</Label>
+                                                                <Input 
+                                                                    required 
+                                                                    placeholder="VD: VN123456" 
+                                                                    value={trackingCode} 
+                                                                    onChange={(e) => setTrackingCode(e.target.value)}
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <Label>Đơn vị vận chuyển</Label>
+                                                                <Input 
+                                                                    placeholder="VD: GHTK, Viettel Post..." 
+                                                                    value={carrier} 
+                                                                    onChange={(e) => setCarrier(e.target.value)}
+                                                                />
+                                                            </div>
+                                                            <DialogFooter>
+                                                                <Button variant="outline" type="button" onClick={() => setIsShipDialogOpen(false)}>Hủy</Button>
+                                                                <Button type="submit" className="bg-brand" disabled={isActionLoading}>
+                                                                    {isActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                                    Xác nhận
+                                                                </Button>
+                                                            </DialogFooter>
+                                                        </form>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            )}
+                                            {invoice.status === "PENDING" && (
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="destructive" 
+                                                    className="flex-1"
+                                                    onClick={() => handleAction(onReportNonpayment)}
+                                                    disabled={isActionLoading}
+                                                >
+                                                    {isActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Báo cáo bùng kèo"}
+                                                </Button>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            {canPay && (
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    className="flex-1 bg-brand text-white"
+                                                    disabled={isPaying || isActionLoading}
+                                                    onClick={onPay}
+                                                >
+                                                    {(isPaying || isActionLoading) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Thanh toán qua VNPay"}
+                                                </Button>
+                                            )}
+                                            {invoice.status === "SHIPPING" && (
+                                                <>
+                                                    <Button 
+                                                        size="sm" 
+                                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                        onClick={() => handleAction(onConfirmReceive)}
+                                                        disabled={isActionLoading}
+                                                    >
+                                                        {isActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Đã nhận được hàng"}
+                                                    </Button>
+                                                    <Button 
+                                                        size="sm" 
+                                                        variant="destructive"
+                                                        onClick={() => handleAction(onDispute)}
+                                                        disabled={isActionLoading}
+                                                    >
+                                                        {isActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Khiếu nại / Báo mất"}
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

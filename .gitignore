@@ -24,7 +24,7 @@ dist-ssr
 *.sw?
 
 # ==============
-SHADCN_GUIDELINES.md
+MYFLOW.md
 AUTH_IMPLEMENTATION.md
 ENDPOINT.md
 .env

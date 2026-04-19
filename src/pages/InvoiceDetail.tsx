@@ -6,6 +6,7 @@ import { addressService } from "@/services/addressService";
 import type { AddressResponse } from "@/types/user";
 import { paymentService } from "@/services/paymentService";
 import { invoiceService } from "@/services/invoiceService";
+import { useAuthStore } from "@/stores/authStore";
 
 interface LocationState {
     invoice?: InvoiceResponse;
@@ -24,6 +25,9 @@ export default function InvoiceDetailPage() {
     const [addresses, setAddresses] = useState<AddressResponse[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
     const [isPaying, setIsPaying] = useState<boolean>(false);
+    
+    const user = useAuthStore((state) => state.user);
+    const isSeller = user?.id === invoice?.product.seller.id;
 
     useEffect(() => {
         const fetchInvoice = async () => {
@@ -101,6 +105,50 @@ export default function InvoiceDetailPage() {
     const handleChangeAddress = (addressId: number) => {
         setSelectedAddressId(addressId);
     };
+
+    const handleShip = async (trackingCode: string, carrier: string) => {
+        if (!invoice) return;
+        try {
+            const updatedInvoice = await invoiceService.shipInvoice(invoice.id, { trackingCode, carrier });
+            setInvoice(updatedInvoice);
+        } catch (error: any) {
+            console.error("Failed to ship invoice:", error);
+            alert(error?.message || "Không thể xác nhận gửi hàng. Vui lòng thử lại.");
+        }
+    };
+
+    const handleConfirmReceive = async () => {
+        if (!invoice) return;
+        try {
+            const updatedInvoice = await invoiceService.confirmInvoice(invoice.id);
+            setInvoice(updatedInvoice);
+        } catch (error: any) {
+            console.error("Failed to confirm invoice:", error);
+            alert(error?.message || "Không thể xác nhận nhận hàng. Vui lòng thử lại.");
+        }
+    };
+
+    const handleDispute = async () => {
+        if (!invoice) return;
+        try {
+            const updatedInvoice = await invoiceService.disputeInvoice(invoice.id);
+            setInvoice(updatedInvoice);
+        } catch (error: any) {
+            console.error("Failed to dispute invoice:", error);
+            alert(error?.message || "Không thể gửi khiếu nại. Vui lòng thử lại.");
+        }
+    };
+
+    const handleReportNonpayment = async () => {
+        if (!invoice) return;
+        try {
+            const updatedInvoice = await invoiceService.reportNonpayment(invoice.id);
+            setInvoice(updatedInvoice);
+        } catch (error: any) {
+            console.error("Failed to report nonpayment:", error);
+            alert(error?.message || "Không thể báo cáo đơn hàng. Vui lòng thử lại.");
+        }
+    };
     if (isLoadingInvoice) {
         return (
             <div className="bg-gray-50 dark:bg-gray-950 py-8">
@@ -174,6 +222,11 @@ export default function InvoiceDetailPage() {
                     selectedAddress={selectedAddress ?? undefined}
                     addresses={addresses}
                     onChangeAddress={handleChangeAddress}
+                    isSeller={isSeller}
+                    onShip={handleShip}
+                    onConfirmReceive={handleConfirmReceive}
+                    onDispute={handleDispute}
+                    onReportNonpayment={handleReportNonpayment}
                 />
             </div>
         </div>
