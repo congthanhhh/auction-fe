@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { InvoiceResponse } from "@/types/invoice";
+import type { InvoiceResponse, ShipInvoiceRequest, DisputeRequest } from "@/types/invoice";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -23,10 +23,10 @@ interface InvoiceDetailProps {
     addresses?: AddressResponse[];
     onChangeAddress?: (addressId: number) => void;
     isSeller?: boolean;
-    onShip?: (trackingCode: string, carrier: string) => Promise<void>;
+    onShip?: (payload: ShipInvoiceRequest) => Promise<void>;
     onConfirmReceive?: () => Promise<void>;
     onReportNonpayment?: () => Promise<void>;
-    onDispute?: () => Promise<void>;
+    onDispute?: (payload: DisputeRequest) => Promise<void>;
 }
 
 export default function InvoiceDetail({
@@ -47,6 +47,10 @@ export default function InvoiceDetail({
     const [trackingCode, setTrackingCode] = useState("");
     const [carrier, setCarrier] = useState("");
     const [isActionLoading, setIsActionLoading] = useState(false);
+    
+    // Dispute state
+    const [isDisputeDialogOpen, setIsDisputeDialogOpen] = useState(false);
+    const [disputeReason, setDisputeReason] = useState("");
 
     const handleShipSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -54,8 +58,22 @@ export default function InvoiceDetail({
         try {
             setIsActionLoading(true);
             if (onShip) {
-                await onShip(trackingCode, carrier);
+                await onShip({ trackingCode, carrier: carrier || undefined });
                 setIsShipDialogOpen(false);
+            }
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
+    const handleDisputeSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!disputeReason.trim()) return;
+        try {
+            setIsActionLoading(true);
+            if (onDispute) {
+                await onDispute({ reason: disputeReason });
+                setIsDisputeDialogOpen(false);
             }
         } finally {
             setIsActionLoading(false);
@@ -74,6 +92,7 @@ export default function InvoiceDetail({
     const firstImage = invoice.product.images[0]?.url;
 
     const canPay = invoice.status === "PENDING";
+    const isOverdue = invoice.dueDate ? new Date() > new Date(invoice.dueDate) : false;
 
     const effectiveAddress = selectedAddress ?? null;
 
@@ -141,7 +160,7 @@ export default function InvoiceDetail({
                         </p>
                     </div>
                 </CardHeader>
-                
+
                 <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-900/50 border-y">
                     {isErrorState ? (
                         <div className="flex flex-col items-center justify-center py-6 text-center">
@@ -157,18 +176,17 @@ export default function InvoiceDetail({
                         <div className="relative">
                             <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-200 dark:bg-gray-700 -translate-y-1/2 rounded" />
                             <div className="absolute top-1/2 left-0 h-0.5 bg-brand -translate-y-1/2 rounded transition-all duration-500" style={{ width: `${currentStep >= 0 ? (currentStep / (steps.length - 1)) * 100 : 0}%` }} />
-                            
+
                             <div className="relative flex justify-between w-full">
                                 {steps.map((step) => {
                                     const Icon = step.icon;
                                     const isActive = currentStep >= step.id;
                                     return (
                                         <div key={step.id} className="flex flex-col items-center gap-2">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 transition-colors duration-300 border-2 ${
-                                                isActive 
-                                                    ? "bg-brand text-white border-brand shadow-sm" 
-                                                    : "bg-white dark:bg-gray-800 text-gray-400 border-gray-200 dark:border-gray-700"
-                                            }`}>
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 transition-colors duration-300 border-2 ${isActive
+                                                ? "bg-brand text-white border-brand shadow-sm"
+                                                : "bg-white dark:bg-gray-800 text-gray-400 border-gray-200 dark:border-gray-700"
+                                                }`}>
                                                 <Icon className="w-5 h-5" />
                                             </div>
                                             <span className={`text-xs font-medium text-center max-w-20 ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
@@ -295,38 +313,45 @@ export default function InvoiceDetail({
                                             {invoice.status === "PAID" && (
                                                 <Dialog open={isShipDialogOpen} onOpenChange={setIsShipDialogOpen}>
                                                     <DialogTrigger asChild>
-                                                        <Button size="sm" className="flex-1 bg-brand text-white">Xác nhận gửi hàng</Button>
+                                                        <Button size="sm" className="flex-1 bg-brand text-white shadow-sm hover:shadow">Xác nhận gửi hàng</Button>
                                                     </DialogTrigger>
-                                                    <DialogContent>
-                                                        <DialogHeader>
-                                                            <DialogTitle>Thông tin giao hàng</DialogTitle>
+                                                    <DialogContent className="sm:max-w-[425px]">
+                                                        <DialogHeader className="space-y-3 pb-4 border-b border-gray-100 dark:border-gray-800">
+                                                            <div className="w-12 h-12 rounded-full bg-brand/10 text-brand flex items-center justify-center mb-2 mx-auto sm:mx-0">
+                                                                <Truck className="w-6 h-6" />
+                                                            </div>
+                                                            <DialogTitle className="text-xl">Xác nhận giao hàng</DialogTitle>
                                                             <DialogDescription>
-                                                                Nhập mã vận đơn và tên đơn vị vận chuyển sau khi bạn đã gửi hàng cho bưu cục.
+                                                                Vui lòng cung cấp mã vận đơn để người mua có thể theo dõi hành trình của đơn hàng.
                                                             </DialogDescription>
                                                         </DialogHeader>
-                                                        <form onSubmit={handleShipSubmit} className="space-y-4">
-                                                            <div className="space-y-2">
-                                                                <Label>Mã vận đơn (Tracking Code) *</Label>
-                                                                <Input 
-                                                                    required 
-                                                                    placeholder="VD: VN123456" 
-                                                                    value={trackingCode} 
-                                                                    onChange={(e) => setTrackingCode(e.target.value)}
-                                                                />
+                                                        <form onSubmit={handleShipSubmit} className="space-y-6 pt-4">
+                                                            <div className="space-y-4">
+                                                                <div className="space-y-2">
+                                                                    <Label className="text-sm font-medium">Mã vận đơn (Tracking Code) <span className="text-red-500">*</span></Label>
+                                                                    <Input
+                                                                        required
+                                                                        placeholder="VD: VN123456789"
+                                                                        value={trackingCode}
+                                                                        onChange={(e) => setTrackingCode(e.target.value)}
+                                                                        className="h-11 bg-gray-50 dark:bg-gray-900/50"
+                                                                    />
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <Label className="text-sm font-medium">Đơn vị vận chuyển <span className="text-gray-400 font-normal">(Tùy chọn)</span></Label>
+                                                                    <Input
+                                                                        placeholder="VD: Giao Hàng Tiết Kiệm, Viettel Post..."
+                                                                        value={carrier}
+                                                                        onChange={(e) => setCarrier(e.target.value)}
+                                                                        className="h-11 bg-gray-50 dark:bg-gray-900/50"
+                                                                    />
+                                                                </div>
                                                             </div>
-                                                            <div className="space-y-2">
-                                                                <Label>Đơn vị vận chuyển</Label>
-                                                                <Input 
-                                                                    placeholder="VD: GHTK, Viettel Post..." 
-                                                                    value={carrier} 
-                                                                    onChange={(e) => setCarrier(e.target.value)}
-                                                                />
-                                                            </div>
-                                                            <DialogFooter>
-                                                                <Button variant="outline" type="button" onClick={() => setIsShipDialogOpen(false)}>Hủy</Button>
-                                                                <Button type="submit" className="bg-brand" disabled={isActionLoading}>
+                                                            <DialogFooter className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                                                                <Button variant="ghost" type="button" onClick={() => setIsShipDialogOpen(false)}>Hủy bỏ</Button>
+                                                                <Button type="submit" className="bg-brand text-white px-6" disabled={isActionLoading}>
                                                                     {isActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                                    Xác nhận
+                                                                    Cập nhật trạng thái
                                                                 </Button>
                                                             </DialogFooter>
                                                         </form>
@@ -334,12 +359,13 @@ export default function InvoiceDetail({
                                                 </Dialog>
                                             )}
                                             {invoice.status === "PENDING" && (
-                                                <Button 
-                                                    size="sm" 
-                                                    variant="destructive" 
+                                                <Button
+                                                    size="sm"
+                                                    variant="destructive"
                                                     className="flex-1"
                                                     onClick={() => handleAction(onReportNonpayment)}
-                                                    disabled={isActionLoading}
+                                                    disabled={isActionLoading || !isOverdue}
+                                                    title={!isOverdue ? "Chưa quá hạn thanh toán" : ""}
                                                 >
                                                     {isActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Báo cáo bùng kèo"}
                                                 </Button>
@@ -360,22 +386,57 @@ export default function InvoiceDetail({
                                             )}
                                             {invoice.status === "SHIPPING" && (
                                                 <>
-                                                    <Button 
-                                                        size="sm" 
+                                                    <Button
+                                                        size="sm"
                                                         className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                                                         onClick={() => handleAction(onConfirmReceive)}
                                                         disabled={isActionLoading}
                                                     >
                                                         {isActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Đã nhận được hàng"}
                                                     </Button>
-                                                    <Button 
-                                                        size="sm" 
-                                                        variant="destructive"
-                                                        onClick={() => handleAction(onDispute)}
-                                                        disabled={isActionLoading}
-                                                    >
-                                                        {isActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Khiếu nại / Báo mất"}
-                                                    </Button>
+                                                    <Dialog open={isDisputeDialogOpen} onOpenChange={setIsDisputeDialogOpen}>
+                                                        <DialogTrigger asChild>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="destructive"
+                                                                disabled={isActionLoading}
+                                                            >
+                                                                {isActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Khiếu nại / Báo mất"}
+                                                            </Button>
+                                                        </DialogTrigger>
+                                                        <DialogContent className="sm:max-w-[425px]">
+                                                            <DialogHeader className="space-y-3 pb-4 border-b border-gray-100 dark:border-gray-800">
+                                                                <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-2 mx-auto sm:mx-0">
+                                                                    <AlertCircle className="w-6 h-6" />
+                                                                </div>
+                                                                <DialogTitle className="text-xl">Gửi yêu cầu khiếu nại</DialogTitle>
+                                                                <DialogDescription>
+                                                                    Vui lòng cung cấp chi tiết lý do bạn khiếu nại đơn hàng này (ví dụ: chưa nhận được hàng, hàng bị lỗi, v.v...).
+                                                                </DialogDescription>
+                                                            </DialogHeader>
+                                                            <form onSubmit={handleDisputeSubmit} className="space-y-6 pt-4">
+                                                                <div className="space-y-4">
+                                                                    <div className="space-y-2">
+                                                                        <Label className="text-sm font-medium">Lý do khiếu nại <span className="text-red-500">*</span></Label>
+                                                                        <Input
+                                                                            required
+                                                                            placeholder="Ví dụ: Đã quá hạn nhưng tôi chưa nhận được hàng..."
+                                                                            value={disputeReason}
+                                                                            onChange={(e) => setDisputeReason(e.target.value)}
+                                                                            className="h-11 bg-gray-50 dark:bg-gray-900/50"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                <DialogFooter className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                                                                    <Button variant="ghost" type="button" onClick={() => setIsDisputeDialogOpen(false)}>Hủy bỏ</Button>
+                                                                    <Button type="submit" variant="destructive" className="px-6" disabled={isActionLoading}>
+                                                                        {isActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                                        Gửi khiếu nại
+                                                                    </Button>
+                                                                </DialogFooter>
+                                                            </form>
+                                                        </DialogContent>
+                                                    </Dialog>
                                                 </>
                                             )}
                                         </>

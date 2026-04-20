@@ -1,6 +1,7 @@
 import { api } from "./api";
 import { API_ENDPOINTS } from "@/constants/api";
-import type { InvoicePageResponse, InvoiceResponse, InvoiceStatus, InvoiceType } from "@/types/invoice";
+import type { InvoicePageResponse, InvoiceResponse, InvoiceStatus, InvoiceType, DisputeRequest } from "@/types/invoice";
+import type { MessageResponse } from "@/types/user";
 
 function unwrapApiResponse<T>(response: any): T {
     return response as T;
@@ -37,23 +38,23 @@ export const invoiceService = {
         return unwrapApiResponse<InvoiceResponse>(response);
     },
 
-    shipInvoice: async (id: number, payload: import("@/types/invoice").ShipInvoiceRequest): Promise<InvoiceResponse> => {
+    shipInvoice: async (id: number, payload: import("@/types/invoice").ShipInvoiceRequest): Promise<MessageResponse> => {
         const response = await api.post(API_ENDPOINTS.INVOICE.SHIP(id), payload);
-        return unwrapApiResponse<InvoiceResponse>(response);
+        return unwrapApiResponse<MessageResponse>(response);
     },
 
-    confirmInvoice: async (id: number): Promise<InvoiceResponse> => {
+    confirmInvoice: async (id: number): Promise<MessageResponse> => {
         const response = await api.post(API_ENDPOINTS.INVOICE.CONFIRM(id));
-        return unwrapApiResponse<InvoiceResponse>(response);
+        return unwrapApiResponse<MessageResponse>(response);
     },
 
-    disputeInvoice: async (id: number): Promise<InvoiceResponse> => {
-        const response = await api.post(API_ENDPOINTS.INVOICE.DISPUTE(id));
-        return unwrapApiResponse<InvoiceResponse>(response);
+    disputeInvoice: async (id: number, payload: DisputeRequest): Promise<MessageResponse> => {
+        const response = await api.post(API_ENDPOINTS.INVOICE.DISPUTE(id), payload);
+        return unwrapApiResponse<MessageResponse>(response);
     },
 
-    reportNonpayment: async (id: number): Promise<InvoiceResponse> => {
+    reportNonpayment: async (id: number): Promise<MessageResponse> => {
         const response = await api.post(API_ENDPOINTS.INVOICE.REPORT_NONPAYMENT(id));
-        return unwrapApiResponse<InvoiceResponse>(response);
+        return unwrapApiResponse<MessageResponse>(response);
     },
 };

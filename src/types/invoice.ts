@@ -54,3 +54,7 @@ export interface ShipInvoiceRequest {
     trackingCode: string;
     carrier?: string;
 }
+
+export interface DisputeRequest {
+    reason: string;
+}

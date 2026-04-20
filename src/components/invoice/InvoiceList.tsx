@@ -52,7 +52,7 @@ export default function InvoiceList({ invoices, isSeller }: InvoiceListProps) {
                                                 className="align-middle cursor-pointer hover:bg-muted/60"
                                                 onClick={() =>
                                                     navigate(`/my-invoices/${invoice.id}`, {
-                                                        state: { invoice },
+                                                        state: { invoice, isSeller },
                                                     })
                                                 }
                                             >

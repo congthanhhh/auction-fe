@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import InvoiceDetail from "@/components/invoice/Detail";
-import type { InvoiceResponse } from "@/types/invoice";
+import type { InvoiceResponse, ShipInvoiceRequest, DisputeRequest } from "@/types/invoice";
 import { addressService } from "@/services/addressService";
 import type { AddressResponse } from "@/types/user";
 import { paymentService } from "@/services/paymentService";
@@ -10,6 +10,7 @@ import { useAuthStore } from "@/stores/authStore";
 
 interface LocationState {
     invoice?: InvoiceResponse;
+    isSeller?: boolean;
 }
 
 export default function InvoiceDetailPage() {
@@ -27,7 +28,12 @@ export default function InvoiceDetailPage() {
     const [isPaying, setIsPaying] = useState<boolean>(false);
     
     const user = useAuthStore((state) => state.user);
-    const isSeller = user?.id === invoice?.product.seller.id;
+    // Ưu tiên dùng isSeller truyền từ route (trang MySales)
+    const isSeller = locationState?.isSeller ?? (
+        user?.username === invoice?.product.seller.username || 
+        user?.email === invoice?.product.seller.email || 
+        user?.id === invoice?.product.seller.id
+    );
 
     useEffect(() => {
         const fetchInvoice = async () => {
@@ -106,10 +112,11 @@ export default function InvoiceDetailPage() {
         setSelectedAddressId(addressId);
     };
 
-    const handleShip = async (trackingCode: string, carrier: string) => {
+    const handleShip = async (payload: ShipInvoiceRequest) => {
         if (!invoice) return;
         try {
-            const updatedInvoice = await invoiceService.shipInvoice(invoice.id, { trackingCode, carrier });
+            await invoiceService.shipInvoice(invoice.id, payload);
+            const updatedInvoice = await invoiceService.getInvoiceById(invoice.id);
             setInvoice(updatedInvoice);
         } catch (error: any) {
             console.error("Failed to ship invoice:", error);
@@ -120,7 +127,8 @@ export default function InvoiceDetailPage() {
     const handleConfirmReceive = async () => {
         if (!invoice) return;
         try {
-            const updatedInvoice = await invoiceService.confirmInvoice(invoice.id);
+            await invoiceService.confirmInvoice(invoice.id);
+            const updatedInvoice = await invoiceService.getInvoiceById(invoice.id);
             setInvoice(updatedInvoice);
         } catch (error: any) {
             console.error("Failed to confirm invoice:", error);
@@ -128,10 +136,11 @@ export default function InvoiceDetailPage() {
         }
     };
 
-    const handleDispute = async () => {
+    const handleDispute = async (payload: DisputeRequest) => {
         if (!invoice) return;
         try {
-            const updatedInvoice = await invoiceService.disputeInvoice(invoice.id);
+            await invoiceService.disputeInvoice(invoice.id, payload);
+            const updatedInvoice = await invoiceService.getInvoiceById(invoice.id);
             setInvoice(updatedInvoice);
         } catch (error: any) {
             console.error("Failed to dispute invoice:", error);
@@ -142,7 +151,8 @@ export default function InvoiceDetailPage() {
     const handleReportNonpayment = async () => {
         if (!invoice) return;
         try {
-            const updatedInvoice = await invoiceService.reportNonpayment(invoice.id);
+            await invoiceService.reportNonpayment(invoice.id);
+            const updatedInvoice = await invoiceService.getInvoiceById(invoice.id);
             setInvoice(updatedInvoice);
         } catch (error: any) {
             console.error("Failed to report nonpayment:", error);
