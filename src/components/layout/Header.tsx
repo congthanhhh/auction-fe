@@ -35,7 +35,7 @@ import { useRequireAuth } from '@/hooks/use-require-auth';
 export default function Header() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { isAuthenticated, user, logout } = useAuthStore();
+    const { isAuthenticated, user, logoutWithApi } = useAuthStore();
     const requireAuth = useRequireAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchExpanded, setSearchExpanded] = useState(false);
@@ -55,8 +55,8 @@ export default function Header() {
 
     const signInHref = buildSignInLink();
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await logoutWithApi();
         navigate('/signin');
     };
 
@@ -150,7 +150,12 @@ export default function Header() {
                                                 </Link>
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600">
+                                            <DropdownMenuItem
+                                                onClick={() => {
+                                                    void handleLogout();
+                                                }}
+                                                className="cursor-pointer text-red-600 focus:text-red-600"
+                                            >
                                                 <LogOut className="mr-2 h-4 w-4" />
                                                 Logout
                                             </DropdownMenuItem>
@@ -364,7 +369,7 @@ export default function Header() {
                                                 variant="destructive"
                                                 className="w-full text-lg justify-start"
                                                 onClick={() => {
-                                                    handleLogout();
+                                                    void handleLogout();
                                                     setMobileMenuOpen(false);
                                                 }}
                                             >

@@ -148,13 +148,49 @@ class AuthService {
     }
 
     /**
-     * Logout user
-     * Clear local storage and optionally call backend logout endpoint
+     * Logout on backend
+     * Backend sẽ đọc:
+     * - Access token từ header Authorization (Bearer ...)
+     * - Refresh token từ httpOnly cookie refresh_token
+     * và trả về MessageResponse + clear refresh_token cookie.
+     */
+    async logoutApi(accessToken?: string | null): Promise<MessageResponse> {
+        const token = accessToken ?? this.getAccessToken();
+
+        try {
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json',
+            };
+
+            if (token) {
+                headers.Authorization = `Bearer ${token}`;
+            }
+
+            const response = await axios.post<MessageResponse>(
+                `${API_BASE_URL}${API_ENDPOINTS.AUTH.LOGOUT}`,
+                {},
+                {
+                    withCredentials: true,
+                    headers,
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response) {
+                const apiError = error.response.data as ApiErrorResponse;
+                throw new Error(apiError.message || 'Đăng xuất thất bại');
+            }
+            throw new Error('Không thể kết nối đến server');
+        }
+    }
+
+    /**
+     * Local logout: chỉ xoá accessToken ở localStorage.
+     * Nếu cần clear refresh_token cookie ở backend, dùng logoutApi().
      */
     logout(): void {
         localStorage.removeItem('accessToken');
-        // Có thể gọi API logout nếu backend có endpoint
-        // await axios.post(`${API_BASE_URL}${API_ENDPOINTS.AUTH.LOGOUT}`, {}, { withCredentials: true });
     }
 
     /**

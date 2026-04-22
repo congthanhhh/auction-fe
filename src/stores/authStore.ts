@@ -27,6 +27,7 @@ interface AuthStore {
     redirectToGoogleLogin: () => void;
     loginWithGoogleCode: (payload: GoogleAuthRequest) => Promise<void>;
     logout: () => void;
+    logoutWithApi: () => Promise<void>;
     refreshToken: () => Promise<void>;
     setError: (error: string | null) => void;
     clearError: () => void;
@@ -153,6 +154,19 @@ export const useAuthStore = create<AuthStore>()(
                     user: null,
                     error: null,
                 });
+            },
+
+            // Logout with API - call backend to clear refresh_token cookie then logout locally
+            logoutWithApi: async () => {
+                const token = get().accessToken ?? authService.getAccessToken();
+
+                try {
+                    await authService.logoutApi(token);
+                } catch {
+                    // Ignore logout API errors; still proceed with local logout
+                } finally {
+                    get().logout();
+                }
             },
 
             // Refresh Token Action
