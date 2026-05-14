@@ -43,6 +43,6 @@ export function formatNumber(value?: number | null): string {
 }
 
 export function formatCurrency(amount?: number | null): string {
-  if (typeof amount !== 'number' || Number.isNaN(amount)) return '0 ₫'
+  if (typeof amount !== 'number' || Number.isNaN(amount)) return '0 ₫'
   return currencyFormatter.format(amount)
 }

@@ -49,6 +49,7 @@
 }
 
 :root {
+    color-scheme: light;
     --radius: 0.625rem;
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
@@ -84,6 +85,7 @@
 }
 
 .dark {
+    color-scheme: dark;
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
@@ -124,5 +126,53 @@
 
     body {
         @apply bg-background text-foreground;
+    }
+
+    html,
+    #root {
+        min-height: 100%;
+        background: var(--background);
+        color: var(--foreground);
+    }
+
+    .dark .bg-white {
+        background-color: var(--card);
+    }
+
+    .dark .bg-gray-50,
+    .dark .bg-slate-50 {
+        background-color: var(--background);
+    }
+
+    .dark .bg-gray-100,
+    .dark .bg-slate-100 {
+        background-color: var(--muted);
+    }
+
+    .dark .text-gray-950,
+    .dark .text-gray-900,
+    .dark .text-gray-800,
+    .dark .text-slate-950,
+    .dark .text-slate-900,
+    .dark .text-slate-800 {
+        color: var(--foreground);
+    }
+
+    .dark .text-gray-700,
+    .dark .text-gray-600,
+    .dark .text-gray-500,
+    .dark .text-slate-700,
+    .dark .text-slate-600,
+    .dark .text-slate-500 {
+        color: var(--muted-foreground);
+    }
+
+    .dark .border-gray-100,
+    .dark .border-gray-200,
+    .dark .border-gray-300,
+    .dark .border-slate-100,
+    .dark .border-slate-200,
+    .dark .border-slate-300 {
+        border-color: var(--border);
     }
 }

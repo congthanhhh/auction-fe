@@ -2,7 +2,7 @@ import { api } from "./api";
 import { API_ENDPOINTS } from "@/constants/api";
 import type { CategoryRequest, CategoryResponse, PageResponse } from "@/types/auction";
 
-function unwrapApiResponse<T>(response: any): T {
+function unwrapApiResponse<T>(response: unknown): T {
 	return response as T;
 }
 

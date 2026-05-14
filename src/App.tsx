@@ -19,6 +19,7 @@ import { useAuthStore } from './stores/authStore';
 import Detail from './components/auction/Detail';
 import Categories from './pages/Categories';
 import CategoryProducts from './pages/CategoryProducts';
+import Stories from './pages/Stories';
 
 function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
@@ -29,7 +30,7 @@ function App() {
   }, [initializeAuth]);
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+    <ThemeProvider>
       <BrowserRouter>
         <Routes>
           {/* Routes with MainLayout */}
@@ -47,6 +48,7 @@ function App() {
             <Route path="view-all-recommended" element={<Recommended />} />
             <Route path="auction/:id" element={<Detail />} />
             <Route path="payment-result" element={<VnPayCallback />} />
+            <Route path="stories" element={<Stories />} />
           </Route>
 
           {/* Routes without MainLayout */}

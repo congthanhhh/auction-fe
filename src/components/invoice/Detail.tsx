@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { InvoiceResponse, ShipInvoiceRequest, DisputeRequest } from "@/types/invoice";
+import type { DisputeResponse, InvoiceResponse, ShipInvoiceRequest, DisputeRequest } from "@/types/invoice";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Receipt, CreditCard, Truck, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Loader2, Receipt, CreditCard, Truck, CheckCircle2, XCircle, AlertCircle, Mail, MapPin, Phone, UserRound } from "lucide-react";
 
 interface InvoiceDetailProps {
     invoice: InvoiceResponse;
@@ -27,6 +27,9 @@ interface InvoiceDetailProps {
     onConfirmReceive?: () => Promise<void>;
     onReportNonpayment?: () => Promise<void>;
     onDispute?: (payload: DisputeRequest) => Promise<void>;
+    dispute?: DisputeResponse | null;
+    isLoadingDispute?: boolean;
+    disputeError?: string | null;
 }
 
 export default function InvoiceDetail({
@@ -42,6 +45,9 @@ export default function InvoiceDetail({
     onConfirmReceive,
     onReportNonpayment,
     onDispute,
+    dispute,
+    isLoadingDispute,
+    disputeError,
 }: InvoiceDetailProps) {
     const [isShipDialogOpen, setIsShipDialogOpen] = useState(false);
     const [trackingCode, setTrackingCode] = useState("");
@@ -97,6 +103,7 @@ export default function InvoiceDetail({
     const effectiveAddress = selectedAddress ?? null;
 
     const shippingRecipientName = effectiveAddress?.recipientName || invoice.recipientName;
+    const shippingEmail = invoice.recipientEmail || invoice.user.email;
     const shippingPhone = effectiveAddress?.phoneNumber || invoice.recipientPhone;
     const shippingAddress = effectiveAddress
         ? effectiveAddress.fullAddress ||
@@ -115,6 +122,11 @@ export default function InvoiceDetail({
 
     const currentStep = getStepperStatus();
     const isErrorState = invoice.status === "DISPUTE" || invoice.status.startsWith("CANCELLED") || invoice.status === "REFUNDED";
+    const disputeDecisionLabels: Record<NonNullable<DisputeResponse["decision"]>, string> = {
+        PENDING: "Đang chờ xử lý",
+        REFUND_TO_BUYER: "Hoàn tiền cho người mua",
+        RELEASE_TO_SELLER: "Thanh toán cho người bán",
+    };
 
     const steps = [
         { id: 0, title: "Chờ thanh toán", icon: Receipt },
@@ -170,6 +182,48 @@ export default function InvoiceDetail({
                                 <XCircle className="h-12 w-12 text-red-500 mb-2" />
                             )}
                             <h3 className="text-lg font-semibold">{invoiceStatusLabels[invoice.status]}</h3>
+                            {invoice.status === "DISPUTE" && (
+                                <div className="mt-4 w-full max-w-2xl rounded-lg border bg-white p-4 text-left shadow-sm dark:bg-gray-950">
+                                    <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                        <p className="text-sm font-semibold text-foreground">Lý do khiếu nại</p>
+                                        {dispute?.decision && (
+                                            <Badge variant="outline" className="w-fit border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                                                {disputeDecisionLabels[dispute.decision]}
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    {isLoadingDispute ? (
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Đang tải lý do khiếu nại...
+                                        </div>
+                                    ) : disputeError ? (
+                                        <p className="text-sm text-red-600">{disputeError}</p>
+                                    ) : dispute ? (
+                                        <div className="space-y-3">
+                                            <p className="whitespace-pre-line break-words text-sm text-foreground">
+                                                {dispute.reason}
+                                            </p>
+                                            <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                                                <span>
+                                                    Gửi lúc: {dispute.createdAt ? format(new Date(dispute.createdAt), "dd/MM/yyyy HH:mm") : "--"}
+                                                </span>
+                                                <span>
+                                                    Xử lý lúc: {dispute.resolvedAt ? format(new Date(dispute.resolvedAt), "dd/MM/yyyy HH:mm") : "--"}
+                                                </span>
+                                            </div>
+                                            {dispute.adminNote && (
+                                                <div className="rounded-md bg-muted/60 p-3 text-sm">
+                                                    <p className="mb-1 font-medium text-foreground">Ghi chú admin</p>
+                                                    <p className="whitespace-pre-line break-words text-muted-foreground">{dispute.adminNote}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">Chưa có thông tin khiếu nại.</p>
+                                    )}
+                                </div>
+                            )}
                             <p className="text-sm text-muted-foreground mt-1">Đơn hàng này không thể hoàn thành.</p>
                         </div>
                     ) : (
@@ -253,15 +307,15 @@ export default function InvoiceDetail({
 
                         {/* Thông tin giao hàng & thanh toán */}
                         <div className="space-y-4 text-sm">
-                            <div className="space-y-1">
-                                <div className="flex items-center justify-between gap-2">
+                            <div className="rounded-lg border bg-muted/20 p-4">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                     <h3 className="text-sm font-semibold text-foreground">Thông tin nhận hàng</h3>
                                     {addresses && addresses.length > 0 && onChangeAddress && (
                                         <Select
                                             value={effectiveAddress ? String(effectiveAddress.id) : ""}
                                             onValueChange={(value) => onChangeAddress(Number(value))}
                                         >
-                                            <SelectTrigger size="sm" className="min-w-[200px] text-xs">
+                                            <SelectTrigger size="sm" className="w-full text-xs sm:w-[220px]">
                                                 <SelectValue placeholder="Chọn địa chỉ nhận hàng" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -277,11 +331,40 @@ export default function InvoiceDetail({
                                         </Select>
                                     )}
                                 </div>
-                                <p className="text-sm font-medium">{shippingRecipientName}</p>
-                                <p className="text-xs text-muted-foreground">SĐT: {shippingPhone}</p>
-                                <p className="text-xs text-muted-foreground whitespace-pre-line">
-                                    {shippingAddress}
-                                </p>
+                                <div className="mt-4 grid gap-3">
+                                    <div className="flex gap-3">
+                                        <UserRound className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                                        <div className="min-w-0">
+                                            <p className="text-xs text-muted-foreground">Người nhận</p>
+                                            <p className="break-words text-sm font-medium">{shippingRecipientName || "--"}</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="flex gap-3">
+                                            <Phone className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                                            <div className="min-w-0">
+                                                <p className="text-xs text-muted-foreground">Số điện thoại</p>
+                                                <p className="break-words text-sm font-medium">{shippingPhone || "--"}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                                            <div className="min-w-0">
+                                                <p className="text-xs text-muted-foreground">Email</p>
+                                                <p className="break-words text-sm font-medium">{shippingEmail || "--"}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                                        <div className="min-w-0">
+                                            <p className="text-xs text-muted-foreground">Địa chỉ nhận hàng</p>
+                                            <p className="whitespace-pre-line break-words text-sm font-medium">
+                                                {shippingAddress || "--"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <Separator />

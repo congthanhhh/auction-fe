@@ -17,6 +17,11 @@ import { auctionService } from "@/services/auctionService";
 import type { AuctionSessionRequest, ProductResponse } from "@/types/auction";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
+import { Loader2, Plus } from "lucide-react";
+
+interface CreateSessionDialogProps {
+    onCreated?: () => Promise<void> | void;
+}
 
 const isWaitingForApproval = (product: ProductResponse) => product.status === "WAITING_FOR_APPROVAL";
 
@@ -50,7 +55,7 @@ const getProductStatusVariant = (status: ProductResponse["status"]) => {
     }
 };
 
-export function CreateSessionDialog() {
+export function CreateSessionDialog({ onCreated }: CreateSessionDialogProps) {
     const [products, setProducts] = useState<ProductResponse[]>([]);
     const [isLoadingProducts, setIsLoadingProducts] = useState(false);
     const [productsError, setProductsError] = useState<string | null>(null);
@@ -76,7 +81,7 @@ export function CreateSessionDialog() {
             } catch (err) {
                 const message =
                     err && typeof err === "object" && "message" in err
-                        ? String((err as any).message)
+                        ? String((err as Error).message)
                         : "Không thể tải danh sách sản phẩm";
                 setProductsError(message);
             } finally {
@@ -143,6 +148,7 @@ export function CreateSessionDialog() {
             setIsCreatingSession(true);
             await auctionService.createSession(payload);
             setSessionSuccessMessage("Tạo phiên đấu giá thành công.");
+            await onCreated?.();
 
             // Reset form values
             setSelectedProductId("");
@@ -153,7 +159,7 @@ export function CreateSessionDialog() {
         } catch (err) {
             const message =
                 err && typeof err === "object" && "message" in err
-                    ? String((err as any).message)
+                    ? String((err as Error).message)
                     : "Không thể tạo phiên đấu giá";
             setSessionError(message);
         } finally {
@@ -165,6 +171,7 @@ export function CreateSessionDialog() {
         <Dialog>
             <DialogTrigger asChild>
                 <Button size="sm" className="mt-4 sm:mt-0">
+                    <Plus className="size-4" />
                     Tạo phiên mới
                 </Button>
             </DialogTrigger>
@@ -172,8 +179,7 @@ export function CreateSessionDialog() {
                 <DialogHeader>
                     <DialogTitle>Tạo phiên đấu giá mới</DialogTitle>
                     <DialogDescription>
-                        Điền thông tin để tạo một phiên đấu giá mới. Logic lưu sẽ được thêm
-                        sau.
+                        Chọn sản phẩm đã được duyệt và thiết lập thời gian, giá chấp nhận bán, giá mua ngay.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -375,6 +381,7 @@ export function CreateSessionDialog() {
                         onClick={handleCreateSession}
                         disabled={isCreatingSession}
                     >
+                        {isCreatingSession ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
                         {isCreatingSession ? "Đang tạo..." : "Tạo phiên"}
                     </Button>
                 </DialogFooter>

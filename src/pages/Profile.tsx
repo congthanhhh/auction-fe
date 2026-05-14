@@ -1,173 +1,349 @@
-import { useEffect, useState } from "react";
-import { useAuthStore } from "@/stores/authStore";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useEffect, useMemo, useState } from "react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, MapPin, User2, Shield } from "lucide-react";
+import ProfileAddressSection from "@/components/profile/ProfileAddressSection";
 import { userService } from "@/services/userService";
 import type { UserProfileResponse } from "@/types/user";
-import ProfileOverviewSidebar from "@/components/profile/ProfileOverviewSidebar";
-import ProfileAddressSection from "@/components/profile/ProfileAddressSection";
+import {
+    AlertTriangle,
+    CalendarDays,
+    CheckCircle2,
+    KeyRound,
+    Mail,
+    Phone,
+    ShieldCheck,
+    UserRound,
+    XCircle,
+} from "lucide-react";
+
+const formatDate = (value?: string | null) => {
+    if (!value) return "--";
+
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+        ? "--"
+        : new Intl.DateTimeFormat("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        }).format(date);
+};
+
+const getInitials = (name: string) =>
+    name
+        .trim()
+        .split(/\s+/)
+        .map((part) => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase() || "U";
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+    if (error instanceof Error && error.message) {
+        return error.message;
+    }
+
+    if (typeof error === "object" && error !== null && "message" in error) {
+        const message = (error as { message?: unknown }).message;
+        if (typeof message === "string" && message) {
+            return message;
+        }
+    }
+
+    return fallback;
+};
 
 const Profile = () => {
-    const { user } = useAuthStore();
-
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
+    const [isLoadingProfile, setIsLoadingProfile] = useState(true);
     const [profileError, setProfileError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchData = async () => {
+        let isMounted = true;
+
+        const fetchProfile = async () => {
             try {
+                setIsLoadingProfile(true);
                 setProfileError(null);
                 const profileResponse = await userService.getMyProfile();
-                setProfile(profileResponse);
+
+                if (isMounted) {
+                    setProfile(profileResponse);
+                }
             } catch (error) {
                 console.error("Failed to load profile:", error);
-                setProfileError("Failed to load profile information.");
+                if (isMounted) {
+                    setProfileError(getErrorMessage(error, "Không tải được thông tin tài khoản."));
+                }
             } finally {
+                if (isMounted) {
+                    setIsLoadingProfile(false);
+                }
             }
         };
 
-        fetchData();
+        fetchProfile();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
+    const fullName = useMemo(() => {
+        if (!profile) return "Người dùng";
+        return `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim() || profile.username;
+    }, [profile]);
+
+    const roles = profile?.roles?.map((role) => role.name).filter(Boolean) ?? [];
+    const reputationScore = profile?.reputationScore ?? 0;
+    const strikeCount = profile?.strikeCount ?? 0;
+
     return (
-        <div className="bg-gray-50 dark:bg-gray-950 py-8">
-            <div className="container mx-auto px-4 max-w-6xl">
-                {/* Header */}
-                <div className="mb-8 relative rounded-2xl overflow-hidden bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    {/* Background decorations */}
-                    <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-brand/5 blur-3xl" />
-                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-brand2/5 blur-3xl" />
-                    
-                    <div className="relative z-10 flex flex-col gap-2">
-                        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                            <div className="p-2 bg-brand/10 dark:bg-brand/20 rounded-xl text-brand">
-                                <User2 className="h-6 w-6 sm:h-8 sm:w-8" />
+        <div className="min-h-screen bg-slate-50 py-8 dark:bg-gray-950">
+            <div className="container mx-auto max-w-6xl space-y-6 px-4">
+                <section className="rounded-lg border bg-white p-5 shadow-sm dark:bg-gray-900">
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
+                            <Avatar className="h-20 w-20 border bg-white shadow-sm">
+                                <AvatarFallback className="bg-brand/10 text-2xl font-bold text-brand">
+                                    {getInitials(fullName)}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 space-y-2">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Hồ sơ cá nhân</p>
+                                    <h1 className="break-words text-2xl font-bold text-gray-950 dark:text-white sm:text-3xl">
+                                        {fullName}
+                                    </h1>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Badge variant="secondary" className="gap-1">
+                                        <UserRound className="h-3 w-3" />
+                                        @{profile?.username ?? "--"}
+                                    </Badge>
+                                    {roles.length > 0 ? roles.map((role) => (
+                                        <Badge key={role} variant="outline" className="gap-1">
+                                            <ShieldCheck className="h-3 w-3" />
+                                            {role}
+                                        </Badge>
+                                    )) : (
+                                        <Badge variant="outline">Chưa có vai trò</Badge>
+                                    )}
+                                </div>
                             </div>
-                            My Profile
-                        </h1>
-                        <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 max-w-xl">
-                            Manage your personal information, shipping addresses, security preferences, and track your auction activity.
-                        </p>
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[430px]">
+                            <div className="rounded-md border bg-slate-50 p-4 dark:bg-gray-950">
+                                <p className="text-xs text-muted-foreground">Uy tín</p>
+                                <p className="mt-1 text-2xl font-bold text-foreground">{reputationScore}</p>
+                            </div>
+                            <div className="rounded-md border bg-slate-50 p-4 dark:bg-gray-950">
+                                <p className="text-xs text-muted-foreground">Cảnh cáo</p>
+                                <p className="mt-1 text-2xl font-bold text-foreground">{strikeCount}</p>
+                            </div>
+                            <div className="rounded-md border bg-slate-50 p-4 dark:bg-gray-950">
+                                <p className="text-xs text-muted-foreground">Trạng thái</p>
+                                <div className="mt-2">
+                                    {profile?.isActive === false ? (
+                                        <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
+                                            <XCircle className="h-3 w-3" />
+                                            Bị khóa
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">
+                                            <CheckCircle2 className="h-3 w-3" />
+                                            Hoạt động
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </section>
 
-                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.6fr)] gap-6 items-start">
-                    {/* Left column: overview + quick stats */}
-                    <ProfileOverviewSidebar user={user} profile={profile} />
-
-                    {/* Right column: tabs */}
+                {isLoadingProfile && (
                     <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base font-semibold">Account details</CardTitle>
-                            {profileError && (
-                                <CardDescription className="text-red-500">
-                                    {profileError}
-                                </CardDescription>
-                            )}
-                        </CardHeader>
-                        <CardContent>
-                            <Tabs defaultValue="overview" className="w-full">
-                                <TabsList className="mb-4">
-                                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                                    <TabsTrigger value="addresses">Addresses</TabsTrigger>
-                                    <TabsTrigger value="activity">Activity</TabsTrigger>
-                                    <TabsTrigger value="security">Security</TabsTrigger>
-                                </TabsList>
-
-                                <TabsContent value="overview" className="mt-6 space-y-4">
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        {/* Username */}
-                                        <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20 hover:bg-white dark:hover:bg-gray-800 transition-colors">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <div className="p-2 rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
-                                                    <User2 className="h-4 w-4" />
-                                                </div>
-                                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Username</p>
-                                            </div>
-                                            <p className="text-base font-semibold text-gray-900 dark:text-white pl-[44px]">
-                                                {profile?.username || user?.username || "-"}
-                                            </p>
-                                        </div>
-
-                                        {/* Email */}
-                                        <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20 hover:bg-white dark:hover:bg-gray-800 transition-colors">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <div className="p-2 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                                                    <User2 className="h-4 w-4" />
-                                                </div>
-                                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Email Address</p>
-                                            </div>
-                                            <p className="text-base font-semibold text-gray-900 dark:text-white pl-[44px]">
-                                                {profile?.email || user?.email || "-"}
-                                            </p>
-                                        </div>
-
-                                        {/* Phone */}
-                                        <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20 hover:bg-white dark:hover:bg-gray-800 transition-colors">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                                    <Phone className="h-4 w-4" />
-                                                </div>
-                                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Phone Number</p>
-                                            </div>
-                                            <p className="text-base font-semibold text-gray-900 dark:text-white pl-[44px]">
-                                                {profile?.phone || "-"}
-                                            </p>
-                                        </div>
-
-                                        {/* Location */}
-                                        <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20 hover:bg-white dark:hover:bg-gray-800 transition-colors">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <div className="p-2 rounded-lg bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
-                                                    <MapPin className="h-4 w-4" />
-                                                </div>
-                                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Primary Location</p>
-                                            </div>
-                                            <p className="text-base font-semibold text-gray-900 dark:text-white pl-[44px]">
-                                                {profile?.city || profile?.country
-                                                    ? `${profile?.city || ""}${profile?.city && profile?.country ? ", " : ""}${profile?.country || ""}`
-                                                    : "-"}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </TabsContent>
-
-                                <TabsContent value="addresses" className="space-y-3 text-sm">
-                                    <ProfileAddressSection />
-                                </TabsContent>
-
-                                <TabsContent value="activity" className="space-y-3 text-sm">
-                                    <p className="text-gray-600 dark:text-gray-400">
-                                        Recent bidding and selling activity will appear here.
-                                    </p>
-                                    <Separator />
-                                    <p className="text-xs text-gray-400">
-                                        Once wired, this section can show your latest bids, items won, and items sold.
-                                    </p>
-                                </TabsContent>
-
-                                <TabsContent value="security" className="space-y-3 text-sm">
-                                    <p className="text-gray-600 dark:text-gray-400">
-                                        Manage password and security settings.
-                                    </p>
-                                    <Button variant="outline" size="sm" className="mt-1">
-                                        Change password
-                                    </Button>
-                                </TabsContent>
-                            </Tabs>
+                        <CardContent className="pt-6 text-sm text-muted-foreground">
+                            Đang tải thông tin tài khoản...
                         </CardContent>
-                        <CardFooter className="justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800 mt-6 pt-4 bg-gray-50/50 dark:bg-gray-900/50 rounded-b-xl">
-                            <span className="flex items-center gap-1"><Shield className="h-3 w-3" /> Secure marketplace</span>
-                            <span>Member since {new Date().getFullYear()}</span>
-                        </CardFooter>
                     </Card>
-                </div>
+                )}
+
+                {profileError && !isLoadingProfile && (
+                    <Card className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30">
+                        <CardContent className="flex items-center gap-2 pt-6 text-sm text-red-700 dark:text-red-200">
+                            <AlertTriangle className="h-4 w-4" />
+                            {profileError}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {!isLoadingProfile && !profileError && profile && (
+                    <Tabs defaultValue="info" className="w-full">
+                        <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-lg border bg-white p-1 dark:bg-gray-900 sm:w-fit">
+                            <TabsTrigger value="info">Thông tin</TabsTrigger>
+                            <TabsTrigger value="addresses">Địa chỉ</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="info" className="mt-4">
+                            <div className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Thông tin tài khoản</CardTitle>
+                                        <CardDescription>
+                                            Thông tin định danh và liên hệ đang được lưu trên tài khoản của bạn.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-5">
+                                        <div className="rounded-lg border bg-muted/40 p-4">
+                                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                                <div className="min-w-0">
+                                                    <p className="text-sm text-muted-foreground">Tên hiển thị</p>
+                                                    <p className="break-words text-xl font-semibold text-foreground">{fullName}</p>
+                                                </div>
+                                                <Badge variant="secondary" className="w-fit gap-1">
+                                                    <UserRound className="h-3 w-3" />
+                                                    @{profile.username}
+                                                </Badge>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <InfoItem
+                                                icon={UserRound}
+                                                label="Tên đăng nhập"
+                                                value={profile.username}
+                                            />
+                                            <InfoItem
+                                                icon={UserRound}
+                                                label="Họ"
+                                                value={profile.firstName}
+                                            />
+                                            <InfoItem
+                                                icon={UserRound}
+                                                label="Tên"
+                                                value={profile.lastName}
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <InfoItem
+                                                icon={Mail}
+                                                label="Email"
+                                                value={profile.email}
+                                            />
+                                            <InfoItem
+                                                icon={Phone}
+                                                label="Số điện thoại"
+                                                value={profile.phoneNumber || "--"}
+                                            />
+                                        </div>
+
+                                        <Separator />
+
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <InfoItem
+                                                icon={CalendarDays}
+                                                label="Ngày tạo tài khoản"
+                                                value={formatDate(profile.createdAt)}
+                                            />
+                                            <InfoItem
+                                                icon={KeyRound}
+                                                label="Mật khẩu"
+                                                value={profile.noPassword ? "Chưa tạo mật khẩu" : "Đã thiết lập"}
+                                            />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Vai trò & bảo mật</CardTitle>
+                                        <CardDescription>
+                                            Trạng thái tài khoản, vai trò và điểm uy tín hiện tại.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="space-y-2">
+                                            <p className="text-sm font-medium text-foreground">Vai trò</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {roles.length > 0 ? roles.map((role) => (
+                                                    <Badge key={role} variant="secondary">
+                                                        {role}
+                                                    </Badge>
+                                                )) : (
+                                                    <span className="text-sm text-muted-foreground">--</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <Separator />
+
+                                        <div className="grid gap-3">
+                                            <StatusRow label="Tài khoản" value={profile.isActive === false ? "Bị khóa" : "Hoạt động"} />
+                                            <StatusRow label="Điểm uy tín" value={String(reputationScore)} />
+                                            <StatusRow label="Số lần cảnh cáo" value={String(strikeCount)} />
+                                            <StatusRow label="Mật khẩu" value={profile.noPassword ? "Chưa tạo" : "Đã có"} />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="addresses" className="mt-4">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-lg">Địa chỉ nhận hàng</CardTitle>
+                                    <CardDescription>
+                                        Quản lý địa chỉ dùng cho thanh toán và giao hàng.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <ProfileAddressSection />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
+                )}
             </div>
         </div>
     );
 };
+
+interface InfoItemProps {
+    icon: typeof UserRound;
+    label: string;
+    value: string;
+}
+
+function InfoItem({ icon: Icon, label, value }: InfoItemProps) {
+    return (
+        <div className="rounded-md border bg-slate-50 p-4 dark:bg-gray-950">
+            <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+                <Icon className="h-4 w-4" />
+                <span>{label}</span>
+            </div>
+            <p className="break-words text-sm font-semibold text-foreground">{value || "--"}</p>
+        </div>
+    );
+}
+
+interface StatusRowProps {
+    label: string;
+    value: string;
+}
+
+function StatusRow({ label, value }: StatusRowProps) {
+    return (
+        <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
+            <span className="text-muted-foreground">{label}</span>
+            <span className="text-right font-medium text-foreground">{value}</span>
+        </div>
+    );
+}
 
 export default Profile;

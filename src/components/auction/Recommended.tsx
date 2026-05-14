@@ -1,35 +1,143 @@
-import { useState, useEffect } from "react"
-import ViewAllCard from "@/components/auction/ViewAllCard"
+import { useEffect, useState } from "react"
+import ViewAllCard, { type AuctionListItem, type ProductFilterState } from "@/components/auction/ViewAllCard"
+import { categoryService } from "@/services/categoryService"
+import { productService } from "@/services/productService"
+import { auctionService } from "@/services/auctionService"
+import type {
+    AuctionSessionResponse,
+    CategoryResponse,
+    PageResponse,
+    ProductResponse,
+    ProductSearchRequest,
+} from "@/types/auction"
+import { calculateTimeRemaining } from "@/lib/utils"
+
+const searchBatchSize = 1000
+
+function mapSortToProductSearchSort(sortBy: string): string {
+    switch (sortBy) {
+        case "oldest":
+        case "price_asc":
+        case "price_desc":
+        case "newest":
+            return sortBy
+        default:
+            return "newest"
+    }
+}
+
+function mapSessionToAuctionItem(session: AuctionSessionResponse): AuctionListItem {
+    const hasBids = session.currentPrice > session.startPrice || session.highestBidder !== null
+
+    return {
+        id: session.id,
+        productId: session.product.id,
+        title: session.product.name,
+        image: session.product.images[0]?.url || "https://placehold.co/400x400?text=No+Image",
+        currentBid: session.currentPrice,
+        bids: hasBids ? 1 : 0,
+        timeRemaining: calculateTimeRemaining(session.endTime),
+        isBuyNow: Boolean(session.buyNowPrice) && !hasBids,
+        buyNowPrice: session.buyNowPrice ?? undefined,
+    }
+}
 
 export default function Recommended() {
     const [currentPage, setCurrentPage] = useState(1)
-    const [sortBy, setSortBy] = useState("ending-soon")
-    const [filters, setFilters] = useState({})
-
-    const itemsPerPage = 12
-    const totalItems = 48 // Different total from Featured Items
-
-    // Mock data for orders - replace with API call
-    const generateOrderItems = (page: number, perPage: number) => {
-        return Array.from({ length: Math.min(perPage, totalItems - (page - 1) * perPage) }, (_, i) => ({
-            id: i + 1 + (page - 1) * perPage,
-            title: `My Order Item ${i + 1 + (page - 1) * perPage} - Vintage Collection`,
-            image: `https://via.placeholder.com/300x300?text=Order+${i + 1 + (page - 1) * perPage}`,
-            currentBid: Math.random() * 500 + 50,
-            bids: Math.floor(Math.random() * 30),
-            timeRemaining: `${Math.floor(Math.random() * 12)}h ${Math.floor(Math.random() * 60)}m`,
-            isBuyNow: Math.random() > 0.5,
-            buyNowPrice: Math.random() * 1000 + 200,
-        }))
-    }
-
-    const [items, setItems] = useState(() => generateOrderItems(currentPage, itemsPerPage))
+    const [itemsPerPage] = useState(12)
+    const [totalItems, setTotalItems] = useState(0)
+    const [items, setItems] = useState<AuctionListItem[]>([])
+    const [categories, setCategories] = useState<CategoryResponse[]>([])
+    const [sortBy, setSortBy] = useState("newest")
+    const [filters, setFilters] = useState<ProductFilterState>({})
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        // In real app: fetchMyOrders(currentPage, itemsPerPage, sortBy, filters)
-        const newItems = generateOrderItems(currentPage, itemsPerPage)
-        setItems(newItems)
-    }, [currentPage, sortBy, filters, totalItems, itemsPerPage])
+        let isMounted = true
+
+        const fetchCategories = async () => {
+            try {
+                const response = await categoryService.getCategories(1, 100)
+                if (isMounted) setCategories(response.data ?? [])
+            } catch (err) {
+                console.error("Failed to load categories for recommended auctions:", err)
+                if (isMounted) setCategories([])
+            }
+        }
+
+        fetchCategories()
+
+        return () => {
+            isMounted = false
+        }
+    }, [])
+
+    useEffect(() => {
+        let isMounted = true
+
+        const fetchAuctionItems = async () => {
+            try {
+                setLoading(true)
+                setError(null)
+
+                const searchParams: ProductSearchRequest = {
+                    keyword: filters.keyword?.trim() || undefined,
+                    categoryId: filters.categoryId,
+                    minPrice: filters.priceMin,
+                    maxPrice: filters.priceMax,
+                    status: "ACTIVE",
+                    isActive: true,
+                    sort: mapSortToProductSearchSort(sortBy),
+                }
+
+                const [productResponse, sessionResponse]: [
+                    PageResponse<ProductResponse>,
+                    PageResponse<AuctionSessionResponse>,
+                ] = await Promise.all([
+                    productService.searchProducts(searchParams, 1, searchBatchSize),
+                    auctionService.getActiveAuctionSessionsDesc(1, searchBatchSize),
+                ])
+
+                if (!isMounted) return
+
+                const productOrder = new Map(
+                    productResponse.data.map((product, index) => [product.id, index]),
+                )
+
+                const matchedSessions = sessionResponse.data
+                    .filter((session) => (
+                        session.product.status === "ACTIVE" &&
+                        productOrder.has(session.product.id)
+                    ))
+                    .sort((a, b) => {
+                        const aIndex = productOrder.get(a.product.id) ?? Number.MAX_SAFE_INTEGER
+                        const bIndex = productOrder.get(b.product.id) ?? Number.MAX_SAFE_INTEGER
+                        return aIndex - bIndex
+                    })
+
+                const startIndex = (currentPage - 1) * itemsPerPage
+                const currentPageSessions = matchedSessions.slice(startIndex, startIndex + itemsPerPage)
+
+                setItems(currentPageSessions.map(mapSessionToAuctionItem))
+                setTotalItems(matchedSessions.length)
+            } catch (err) {
+                if (!isMounted) return
+                console.error("Failed to load recommended auctions:", err)
+                setError("Failed to load recommended auctions. Please try again later.")
+                setItems([])
+                setTotalItems(0)
+            } finally {
+                if (isMounted) setLoading(false)
+            }
+        }
+
+        fetchAuctionItems()
+
+        return () => {
+            isMounted = false
+        }
+    }, [currentPage, itemsPerPage, sortBy, filters])
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page)
@@ -40,18 +148,35 @@ export default function Recommended() {
         setCurrentPage(1)
     }
 
-    const handleFilterChange = (newFilters: any) => {
+    const handleFilterChange = (newFilters: ProductFilterState) => {
         setFilters(newFilters)
         setCurrentPage(1)
     }
 
+    if (loading) {
+        return (
+            <div className="container mx-auto px-4 py-12 text-center">
+                <p className="text-gray-500 dark:text-gray-400">Loading recommended auctions...</p>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="container mx-auto px-4 py-12 text-center">
+                <p className="text-red-500 dark:text-red-400">{error}</p>
+            </div>
+        )
+    }
+
     return (
         <ViewAllCard
-            title="My Orders"
+            title="Recommended Auctions"
             items={items}
             totalItems={totalItems}
             itemsPerPage={itemsPerPage}
             currentPage={currentPage}
+            categories={categories}
             onPageChange={handlePageChange}
             onSortChange={handleSortChange}
             onFilterChange={handleFilterChange}

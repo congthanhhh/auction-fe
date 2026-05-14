@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import InvoiceDetail from "@/components/invoice/Detail";
-import type { InvoiceResponse, ShipInvoiceRequest, DisputeRequest } from "@/types/invoice";
+import type { DisputeRequest, DisputeResponse, InvoiceResponse, ShipInvoiceRequest } from "@/types/invoice";
 import { addressService } from "@/services/addressService";
 import type { AddressResponse } from "@/types/user";
 import { paymentService } from "@/services/paymentService";
@@ -13,6 +13,21 @@ interface LocationState {
     isSeller?: boolean;
 }
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+    if (error instanceof Error && error.message) {
+        return error.message;
+    }
+
+    if (typeof error === "object" && error !== null && "message" in error) {
+        const message = (error as { message?: unknown }).message;
+        if (typeof message === "string" && message) {
+            return message;
+        }
+    }
+
+    return fallback;
+};
+
 export default function InvoiceDetailPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -22,6 +37,9 @@ export default function InvoiceDetailPage() {
     const [invoice, setInvoice] = useState<InvoiceResponse | null>(locationState?.invoice ?? null);
     const [isLoadingInvoice, setIsLoadingInvoice] = useState<boolean>(!locationState?.invoice);
     const [invoiceError, setInvoiceError] = useState<string | null>(null);
+    const [dispute, setDispute] = useState<DisputeResponse | null>(null);
+    const [isLoadingDispute, setIsLoadingDispute] = useState<boolean>(false);
+    const [disputeError, setDisputeError] = useState<string | null>(null);
 
     const [addresses, setAddresses] = useState<AddressResponse[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
@@ -46,10 +64,9 @@ export default function InvoiceDetailPage() {
                 setInvoiceError(null);
                 const fetched = await invoiceService.getInvoiceById(Number(id));
                 setInvoice(fetched);
-            } catch (error: any) {
-                // eslint-disable-next-line no-console
+            } catch (error: unknown) {
                 console.error("Failed to load invoice detail:", error);
-                setInvoiceError(error?.message || "Không tải được chi tiết hoá đơn.");
+                setInvoiceError(getErrorMessage(error, "Không tải được chi tiết hoá đơn."));
             } finally {
                 setIsLoadingInvoice(false);
             }
@@ -57,6 +74,44 @@ export default function InvoiceDetailPage() {
 
         fetchInvoice();
     }, [id, locationState?.invoice]);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchDispute = async () => {
+            if (!invoice || invoice.status !== "DISPUTE") {
+                setDispute(null);
+                setDisputeError(null);
+                return;
+            }
+
+            try {
+                setIsLoadingDispute(true);
+                setDisputeError(null);
+                const disputeResponse = await invoiceService.getDisputeByInvoice(invoice.id);
+
+                if (isMounted) {
+                    setDispute(disputeResponse);
+                }
+            } catch (error) {
+                console.error("Failed to load dispute detail:", error);
+                if (isMounted) {
+                    setDispute(null);
+                    setDisputeError("Không tải được lý do khiếu nại.");
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoadingDispute(false);
+                }
+            }
+        };
+
+        fetchDispute();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [invoice]);
 
     useEffect(() => {
         const fetchAddresses = async () => {
@@ -69,7 +124,6 @@ export default function InvoiceDetailPage() {
                     setSelectedAddressId(foundDefault.id);
                 }
             } catch (error) {
-                // eslint-disable-next-line no-console
                 console.error("Failed to load addresses for invoice detail:", error);
             }
         };
@@ -95,10 +149,9 @@ export default function InvoiceDetailPage() {
             if (typeof window !== "undefined") {
                 window.location.href = paymentUrl;
             }
-        } catch (error: any) {
-            // eslint-disable-next-line no-console
+        } catch (error: unknown) {
             console.error("Failed to create VNPay payment:", error);
-            alert(error?.message || "Không tạo được liên kết thanh toán VNPay. Vui lòng thử lại.");
+            alert(getErrorMessage(error, "Không tạo được liên kết thanh toán VNPay. Vui lòng thử lại."));
         } finally {
             setIsPaying(false);
         }
@@ -118,9 +171,9 @@ export default function InvoiceDetailPage() {
             await invoiceService.shipInvoice(invoice.id, payload);
             const updatedInvoice = await invoiceService.getInvoiceById(invoice.id);
             setInvoice(updatedInvoice);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Failed to ship invoice:", error);
-            alert(error?.message || "Không thể xác nhận gửi hàng. Vui lòng thử lại.");
+            alert(getErrorMessage(error, "Không thể xác nhận gửi hàng. Vui lòng thử lại."));
         }
     };
 
@@ -130,9 +183,9 @@ export default function InvoiceDetailPage() {
             await invoiceService.confirmInvoice(invoice.id);
             const updatedInvoice = await invoiceService.getInvoiceById(invoice.id);
             setInvoice(updatedInvoice);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Failed to confirm invoice:", error);
-            alert(error?.message || "Không thể xác nhận nhận hàng. Vui lòng thử lại.");
+            alert(getErrorMessage(error, "Không thể xác nhận nhận hàng. Vui lòng thử lại."));
         }
     };
 
@@ -142,9 +195,11 @@ export default function InvoiceDetailPage() {
             await invoiceService.disputeInvoice(invoice.id, payload);
             const updatedInvoice = await invoiceService.getInvoiceById(invoice.id);
             setInvoice(updatedInvoice);
-        } catch (error: any) {
+            const disputeResponse = await invoiceService.getDisputeByInvoice(invoice.id);
+            setDispute(disputeResponse);
+        } catch (error: unknown) {
             console.error("Failed to dispute invoice:", error);
-            alert(error?.message || "Không thể gửi khiếu nại. Vui lòng thử lại.");
+            alert(getErrorMessage(error, "Không thể gửi khiếu nại. Vui lòng thử lại."));
         }
     };
 
@@ -154,9 +209,9 @@ export default function InvoiceDetailPage() {
             await invoiceService.reportNonpayment(invoice.id);
             const updatedInvoice = await invoiceService.getInvoiceById(invoice.id);
             setInvoice(updatedInvoice);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Failed to report nonpayment:", error);
-            alert(error?.message || "Không thể báo cáo đơn hàng. Vui lòng thử lại.");
+            alert(getErrorMessage(error, "Không thể báo cáo đơn hàng. Vui lòng thử lại."));
         }
     };
     if (isLoadingInvoice) {
@@ -237,6 +292,9 @@ export default function InvoiceDetailPage() {
                     onConfirmReceive={handleConfirmReceive}
                     onDispute={handleDispute}
                     onReportNonpayment={handleReportNonpayment}
+                    dispute={dispute}
+                    isLoadingDispute={isLoadingDispute}
+                    disputeError={disputeError}
                 />
             </div>
         </div>

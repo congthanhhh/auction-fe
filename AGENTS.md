@@ -1,14 +1,15 @@
-# Hướng dẫn cho AI Agents - Auction Frontend
+# AI Agent Guide - Auction Frontend
 
-> Tài liệu này giúp AI coding agents (Copilot, Claude, v.v.) hiểu rõ về cấu trúc dự án, quy ước code, và những điều cần lưu ý khi phát triển tính năng mới.
+> This document helps AI coding agents understand the project structure, coding conventions, and important development rules for this repository.
 
-## 🎯 Tổng Quan Dự Án
+## Project Overview
 
-**Tên:** Auction Frontend (auction-fe)  
+**Name:** Auction Frontend (`auction-fe`)  
 **Stack:** React 19 + TypeScript + Vite + Tailwind CSS  
-**Mục đích:** Ứng dụng web đấu giá trực tuyến với tính năng thanh toán VNPay, quản lý hóa đơn, và giao dịch
+**Purpose:** Online auction web application with VNPay payment, invoice management, auction sessions, and transaction workflows.
 
 ### Build & Run Commands
+
 ```bash
 npm run dev      # Start dev server (http://localhost:5173)
 npm run build    # Build production
@@ -16,105 +17,133 @@ npm run lint     # Check ESLint errors
 npm run preview  # Preview production build
 ```
 
----
+If PowerShell blocks `npm.ps1`, use `npm.cmd`, for example:
 
-## 📁 Cấu Trúc Dự Án
-
+```bash
+npm.cmd run build
 ```
+
+## Language Rule
+
+- All future agent rules, project guidance, and custom skills must be written in English.
+- User-facing UI copy may be written in Vietnamese when the product experience requires Vietnamese.
+- Code identifiers, comments, and documentation should default to English unless existing local context clearly uses another language.
+
+## Clarification Rule
+
+- If an agent does not understand a requirement, is not sure how an API contract should be mapped, or notices missing request/response data needed to implement the task correctly, the agent must ask the user immediately before making assumptions.
+- Do not invent backend fields, endpoint behavior, or workflow rules when they are not present in local documentation or code.
+
+## Project Structure
+
+```text
 src/
-├── components/        # React components (feature-based + UI primitives)
-│   ├── auction/      # Auction-related components
-│   ├── auth/         # Authentication components
-│   ├── invoice/      # Invoice management components
-│   ├── profile/      # User profile components
-│   ├── layout/       # Layout components (Header, Footer, MainLayout)
-│   ├── ui/           # Shadcn/UI primitive components (Button, Dialog, etc.)
-│   └── common/       # Shared components (Pagination, etc.)
-├── pages/            # Top-level page components (match routes)
-├── services/         # API service layer (Axios-based)
-├── stores/           # Global state (Zustand)
-├── types/            # TypeScript interfaces & enums
-├── hooks/            # Custom React hooks
-├── constants/        # App constants (API endpoints, etc.)
-├── utils/            # Utility functions
-└── lib/              # Library utilities
++-- components/        # React components (feature-based + UI primitives)
+|   +-- auction/       # Auction-related components
+|   +-- auth/          # Authentication components
+|   +-- invoice/       # Invoice management components
+|   +-- profile/       # User profile components
+|   +-- layout/        # Layout components (Header, Footer, MainLayout)
+|   +-- ui/            # Shadcn/UI primitive components (Button, Dialog, etc.)
+|   +-- common/        # Shared components (Pagination, etc.)
++-- pages/             # Top-level page components (route targets)
++-- services/          # API service layer (Axios-based)
++-- stores/            # Global state (Zustand)
++-- types/             # TypeScript interfaces and enums/constants
++-- hooks/             # Custom React hooks
++-- constants/         # App constants, API endpoints, etc.
++-- utils/             # Utility functions
++-- lib/               # Library utilities
 ```
 
----
+## Architectural Patterns
 
-## 🏗️ Architectural Patterns
+### 1. Routing (React Router v7)
 
-### 1. **Routing (React Router v7)**
-- **Entry Point:** [src/App.tsx](src/App.tsx)
+- **Entry point:** [src/App.tsx](src/App.tsx)
 - **Pattern:** Layout-based routing with `<Outlet />`
-- **MainLayout:** Wraps most routes, includes Header + Footer
-- **Auth Routes:** SignIn, SignUp, OAuth callback (no layout)
+- **MainLayout:** Wraps most routes and includes Header + Footer
+- **Auth routes:** SignIn, SignUp, OAuth callback use no layout
 
-**Khi thêm route mới:**
-- Nếu cần Header/Footer → Add inside `<Route path="/" element={<MainLayout />}>`
-- Nếu là auth page → Add outside MainLayout
+When adding a new route:
 
-### 2. **State Management (Zustand)**
+- If it needs Header/Footer, add it inside `<Route path="/" element={<MainLayout />}>`.
+- If it is an auth-only page, add it outside `MainLayout`.
+
+### 2. State Management (Zustand)
+
 **Location:** [src/stores/](src/stores/)
 
 Stores:
-- `authStore.ts` - Authentication & user info
+
+- `authStore.ts` - Authentication and user information
 - `notificationStore.ts` - Notifications/toasts
 - `auctionDetailStore.ts` - Auction detail page state
 
-**Pattern:**
+Pattern:
+
 ```typescript
-// In component:
 const { user, isAuthenticated } = useAuthStore((state) => ({
   user: state.user,
   isAuthenticated: state.isAuthenticated,
 }));
 ```
 
-⚠️ **Important:** Use `persist` middleware for auth (preserves across refreshes)
+Important:
 
-### 3. **API Layer (Axios)**
+- Use `persist` middleware for auth state so login survives refreshes.
+- Keep shared state in Zustand only when it is actually shared across views.
+
+### 3. API Layer (Axios)
+
 **Location:** [src/services/](src/services/)
 
-- `api.ts` - Axios instance with interceptors (handles token refresh)
+- `api.ts` - Axios instance with interceptors, including token refresh handling.
 - Service files: `auctionService.ts`, `authService.ts`, `invoiceService.ts`, etc.
 
-**Pattern:**
+Pattern:
+
 ```typescript
 export const auctionService = {
-  getActive: async (page: number = 1, size: number = 10) => {
+  getActive: async (
+    page: number = 1,
+    size: number = 10,
+  ): Promise<PageResponse<AuctionSessionResponse>> => {
     const response = await api.get(API_ENDPOINTS.AUCTION.ACTIVE, {
-      params: { page, size }
+      params: { page, size },
     });
+
     return response as PageResponse<AuctionSessionResponse>;
   },
 };
-
-// In component:
-const { data } = await auctionService.getActive();
 ```
 
-**Key features:**
-- Automatic token refresh on 401
-- Typed responses (return proper types, not generic `any`)
-- All endpoints in [src/constants/api.ts](src/constants/api.ts)
+Key rules:
 
-### 4. **Components**
-**Naming:** PascalCase + .tsx extension
+- Use the shared `api` instance from [src/services/api.ts](src/services/api.ts).
+- Use endpoint constants from [src/constants/api.ts](src/constants/api.ts).
+- Return typed responses. Avoid generic `any`.
+- Handle loading, error, and empty states in the UI.
 
-**Folder organization:**
-```
+### 4. Components
+
+**Naming:** PascalCase with `.tsx` extension.
+
+Example organization:
+
+```text
 components/
-├── auction/          # Auction feature
-│   ├── AuctionCard.tsx
-│   ├── Detail.tsx    # Main auction detail page
-│   └── CreateSessionDialog.tsx
-└── auth/
-    ├── index.ts      # Export all auth components
-    └── OTPDialog.tsx
++-- auction/
+|   +-- AuctionCard.tsx
+|   +-- Detail.tsx
+|   +-- CreateSessionDialog.tsx
++-- auth/
+    +-- index.ts
+    +-- OTPDialog.tsx
 ```
 
-**Pattern - Functional Components:**
+Component pattern:
+
 ```typescript
 interface Props {
   auctionId: string;
@@ -122,150 +151,154 @@ interface Props {
 }
 
 export function AuctionBidForm({ auctionId, onSuccess }: Props) {
-  const [bidAmount, setBidAmount] = useState('');
+  const [bidAmount, setBidAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
-  
+
   // Implementation...
 }
 
 export default AuctionBidForm;
 ```
 
----
-
-## 🔐 Authentication
+## Authentication
 
 **Flow:** See [AUTH_IMPLEMENTATION.md](AUTH_IMPLEMENTATION.md)
 
-**Key Points:**
-- JWT tokens stored in localStorage (via Zustand persist)
-- Refresh token stored in httpOnly cookies (backend handles)
-- Token refresh happens automatically via API interceptor
-- Protected routes use `useRequireAuth()` hook
+Key points:
 
-**Hook Example:**
+- JWT tokens are stored in localStorage via Zustand persist.
+- Refresh token is stored in httpOnly cookies and handled by the backend.
+- Token refresh happens automatically through the API interceptor.
+- Protected actions use the `useRequireAuth()` hook.
+
+Hook example:
+
 ```typescript
 function MyProtectedComponent() {
   const requireAuth = useRequireAuth();
-  
+
   const handleClick = () => {
     if (requireAuth(() => handleBid())) {
-      // User is authenticated, action executed
+      // User is authenticated and action executed.
     }
-    // Else: redirected to /signin
   };
 }
 ```
 
----
-
-## 📋 Types & Constants
+## Types & Constants
 
 ### Types
+
 **Location:** [src/types/](src/types/)
 
-- `auction.ts` - Auction status enums & interfaces
+- `auction.ts` - Auction status constants and interfaces
 - `auth.ts` - Auth DTOs
 - `invoice.ts` - Invoice DTOs
 - `user.ts` - User interfaces
 - `payment.ts` - Payment-related types
 
-**Important:** Use interfaces for data structures (not `type`), enums for constants
+Rules:
+
+- Use `interface` for data structures.
+- Use constants/enums for fixed values.
+- Match backend DTOs as closely as possible.
+- Export types that cross module boundaries.
 
 ### API Endpoints
+
 **Location:** [src/constants/api.ts](src/constants/api.ts)
 
-All API endpoints are centralized here. Update this file when backend adds new endpoints.
+All API endpoints are centralized here. Update this file when the backend adds or changes endpoints.
 
----
-
-## 🎨 UI Components (Shadcn/UI)
+## UI Components (Shadcn/UI)
 
 **Location:** [src/components/ui/](src/components/ui/)
 
 Common patterns:
-- `<Button />` - All buttons should use this component (not `<button>`)
-- `<Dialog />` - For modals
-- `<Input />` - Form inputs
-- `<Select />` - Dropdowns
-- `<Table />` - Data tables
-- `<Badge />` - Status badges
-- `<Toast />` - Notifications (via store action)
 
-**Styling:** Tailwind CSS with `clsx` / `cn()` for conditional classes
+- Use `<Button />` instead of raw `<button>` for app actions.
+- Use `<Dialog />` for modals.
+- Use `<Input />` for form inputs.
+- Use `<Select />` for dropdowns.
+- Use `<Table />` for data tables.
+- Use `<Badge />` for statuses.
+- Use notification store actions for toasts/messages when available.
+
+Styling:
 
 ```typescript
 import { cn } from "@/lib/utils";
 
-<Button 
-  className={cn("px-4", isActive && "bg-blue-500")}
->
+<Button className={cn("px-4", isActive && "bg-blue-500")}>
   Click me
-</Button>
+</Button>;
 ```
 
----
-
-## 📡 Real-time Updates (Socket.io)
+## Real-time Updates (Socket.io)
 
 **Location:** [src/services/socketService.ts](src/services/socketService.ts)
 
 Used for:
-- Live auction updates (bid history, status changes)
+
+- Live auction updates, including bids and status changes
 - Notifications
 
-**Pattern:**
+Pattern:
+
 ```typescript
-import { socketService } from '@/services/socketService';
+import { socketService } from "@/services/socketService";
 
 useEffect(() => {
-  socketService.on('auction:updated', (data) => {
-    // Handle update
+  socketService.on("auction:updated", (data) => {
+    // Handle update.
   });
 
   return () => {
-    socketService.off('auction:updated');
+    socketService.off("auction:updated");
   };
 }, []);
 ```
 
----
-
-## 🚀 Development Workflows
+## Development Workflow
 
 ### When Adding a New Feature
 
-1. **Plan the flow** → Use template [MYFLOW.md](MYFLOW.md)
-2. **Create types** → [src/types/](src/types/)
-3. **Create service** → [src/services/](src/services/) (if calling API)
-4. **Create components** → [src/components/](src/components/)
-5. **Add route** → [src/App.tsx](src/App.tsx)
-6. **Test in browser** → `npm run dev`
+1. Plan the flow. Use [MYFLOW.md](MYFLOW.md) as a template if needed.
+2. Create or update types in [src/types/](src/types/).
+3. Create or update service methods in [src/services/](src/services/) if the feature calls APIs.
+4. Create focused components under [src/components/](src/components/).
+5. Add or update routes in [src/App.tsx](src/App.tsx).
+6. Test in browser with `npm run dev`.
+7. Run targeted lint/build checks when possible.
 
 ### When Creating a Form
-- Use React Hook Form or basic `useState`
-- Leverage Shadcn/UI `<Input />`, `<Button />`
-- Show loading state on submit button
-- Display errors in `<Alert />` or inline
+
+- Use React Hook Form or local `useState`, following nearby code patterns.
+- Use Shadcn/UI `<Input />`, `<Button />`, `<Select />`, etc.
+- Show loading state on submit.
+- Display validation and API errors near the form.
+- Keep submit handlers typed and avoid `any`.
 
 ### When Handling Async Data
-- Use `useState` + `useEffect` for simple cases
-- Use Zustand store for global state
-- Always handle loading & error states
-- Show proper UI feedback (spinner, toast, etc.)
 
----
+- Use `useState` + `useEffect` for local/simple data.
+- Use Zustand only for shared global state.
+- Always handle loading, error, and empty states.
+- Show useful feedback: spinner, empty message, toast, or inline error.
+- Clean up subscriptions and socket listeners.
 
-## 🧭 Checkpoint Workflow
+## Checkpoint Workflow
 
-Use a checkpoint at the end of each working session so the next day can resume fast.
+Use a checkpoint at the end of a working session so the next session can resume quickly.
 
-### Khi nào cần checkpoint
-- Khi hoàn thành một task trong ngày
-- Khi dừng giữa chừng và muốn tiếp tục sau
-- Khi bạn đã sửa nhiều file và cần ghi lại trạng thái hiện tại
+### When to create a checkpoint
 
-### Mẫu checkpoint
+- After completing a task.
+- When pausing in the middle of a larger task.
+- When multiple files were changed and the current state should be recorded.
+
+### Checkpoint template
+
 ```text
 Checkpoint - [date]
 - Done: ...
@@ -275,64 +308,55 @@ Checkpoint - [date]
 - Blockers/notes: ...
 ```
 
-### Cách dùng
-1. Cuối ngày, ghi ngắn gọn 3-5 dòng theo mẫu trên.
-2. Lưu checkpoint trong session memory hoặc dán lại vào chat khi quay lại.
-3. Ngày hôm sau, nhắn: "Tiếp tục từ checkpoint gần nhất".
-4. Nếu có file đang dang dở, nói rõ tên file để agent đi thẳng vào đúng chỗ.
+### How to resume from a checkpoint
 
-### Cách tôi sẽ tiếp tục khi bạn đưa checkpoint
-- Đọc lại phần `Done` và `In progress`
-- Mở đúng file liên quan
-- Tiếp tục từ `Next step`
-- Nếu checkpoint thiếu thông tin, tôi sẽ hỏi tối đa 1 câu làm rõ
+1. Read `Done` and `In progress`.
+2. Open the files listed under `Files touched`.
+3. Continue from `Next step`.
+4. Ask at most one clarifying question if the checkpoint is missing critical context.
 
----
+## Common Pitfalls
 
-## ⚠️ Common Pitfalls
+1. Do not make untyped API calls. Define types in `src/types/`.
+2. Do not duplicate endpoints. Use `src/constants/api.ts`.
+3. Do not bypass the Axios instance. Use `import { api } from "@/services/api"`.
+4. Do not hardcode API URLs in components.
+5. Do not use `require()`. Use ES module imports.
+6. Do not ignore error handling. Display errors to the user.
+7. Do not add broad abstractions unless they match existing project patterns.
 
-1. **Don't make untyped API calls** → Always define types in `src/types/`
-2. **Don't duplicate endpoints** → Use `src/constants/api.ts`
-3. **Don't bypass the Axios instance** → Use `import { api }` from `src/services/api.ts`
-4. **Don't hardcode API URLs** → Use `API_ENDPOINTS` constants
-5. **Don't use `require()`** → Use ES6 imports
-6. **Don't forget error handling** → Always display errors to user
+## Documentation Files
 
----
+Refer to these files for specific topics:
 
-## 📚 Documentation Files
-
-Refer to these for specific topics:
-- [API_WORKFLOW.md](API_WORKFLOW.md) - API structure & patterns
+- [API_WORKFLOW.md](API_WORKFLOW.md) - API structure and patterns
 - [MYFLOW.md](MYFLOW.md) - Feature planning template
 - [AUTH_IMPLEMENTATION.md](AUTH_IMPLEMENTATION.md) - Auth flow details
-- [ENDPOINT.md](ENDPOINT.md) - All available API endpoints
-- [package.json](package.json) - Dependencies & scripts
+- [ENDPOINT.md](ENDPOINT.md) - Available API endpoints
+- [package.json](package.json) - Dependencies and scripts
 
----
-
-## 🔧 ESLint Configuration
+## ESLint Configuration
 
 - Configured in [eslint.config.js](eslint.config.js)
 - Run `npm run lint` to check errors
-- Fix auto-fixable: `npm run lint -- --fix`
+- Auto-fix where safe with `npm run lint -- --fix`
 
 Common rules:
-- No console logs in production (remove or use if needed)
-- No unused variables
-- React hooks must follow rules
 
----
+- Remove unused variables.
+- Follow React Hooks rules.
+- Avoid `any` unless there is a documented reason.
 
-## 🤝 Best Practices
+## Best Practices
 
-1. **Type Everything** - Use TypeScript strictly
-2. **Keep Components Small** - Max 200-300 lines, extract logic
-3. **Use Constants** - No magic numbers/strings
-4. **Error Handling** - Always try/catch, display to user
-5. **Accessibility** - Use semantic HTML, ARIA labels
-6. **Mobile First** - Design responsive with Tailwind
-7. **Performance** - Avoid inline functions, use `useCallback`
+1. Type everything with TypeScript.
+2. Keep components small and focused. Extract logic when components grow too large.
+3. Use constants instead of magic strings/numbers.
+4. Use `try/catch` for async actions and show user-facing feedback.
+5. Build accessible UI with semantic HTML and ARIA labels where needed.
+6. Design mobile-first with Tailwind.
+7. Prefer existing project patterns over new abstractions.
+8. Use `lucide-react` icons for actions when a matching icon exists.
 
 ---
 

@@ -6,14 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Clock, Printer, Share2, MessageCircle } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { CalendarDays, Clock, Loader2, Mail, MessageCircle, Phone, Printer, Share2, ShieldCheck, Star, UserRound } from "lucide-react";
 import { useAuctionDetailStore } from "@/stores/auctionDetailStore";
 import { format, differenceInDays, differenceInHours, differenceInMinutes, isBefore } from 'date-fns';
 import { socketService } from "@/services/socketService";
 import type { BidResponse, PriceUpdateData } from "@/types/auction";
+import type { PublicUserProfileResponse } from "@/types/user";
 import { formatCurrency } from "@/lib/utils";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { auctionService } from "@/services/auctionService";
+import { userService } from "@/services/userService";
 
 const calculateTimeLeft = (endTime: string) => {
     const now = new Date();
@@ -48,6 +52,30 @@ const parseBidTime = (raw: unknown): Date | null => {
     }
 
     return null;
+};
+
+const getInitials = (value: string) =>
+    value
+        .trim()
+        .split(/\s+/)
+        .map((part) => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase() || "U";
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+    if (error instanceof Error && error.message) {
+        return error.message;
+    }
+
+    if (typeof error === "object" && error !== null && "message" in error) {
+        const message = (error as { message?: unknown }).message;
+        if (typeof message === "string" && message) {
+            return message;
+        }
+    }
+
+    return fallback;
 };
 
 export default function Detail() {
@@ -97,6 +125,50 @@ export default function Detail() {
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [maxBid, setMaxBid] = useState("");
     const [isBuying, setIsBuying] = useState(false);
+    const [sellerProfile, setSellerProfile] = useState<PublicUserProfileResponse | null>(null);
+    const [isSellerLoading, setIsSellerLoading] = useState(false);
+    const [sellerError, setSellerError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const sellerId = auction?.product.seller.id;
+
+        if (!sellerId) {
+            setSellerProfile(null);
+            setIsSellerLoading(false);
+            setSellerError(null);
+            return;
+        }
+
+        let shouldIgnore = false;
+
+        const fetchSellerProfile = async () => {
+            try {
+                setIsSellerLoading(true);
+                setSellerError(null);
+                const profile = await userService.getPublicProfile(sellerId);
+
+                if (!shouldIgnore) {
+                    setSellerProfile(profile);
+                }
+            } catch (error) {
+                console.error("Failed to load seller profile:", error);
+                if (!shouldIgnore) {
+                    setSellerError("Không thể tải thông tin người bán.");
+                    setSellerProfile(null);
+                }
+            } finally {
+                if (!shouldIgnore) {
+                    setIsSellerLoading(false);
+                }
+            }
+        };
+
+        fetchSellerProfile();
+
+        return () => {
+            shouldIgnore = true;
+        };
+    }, [auction?.product.seller.id]);
 
     const handlePlaceBid = () => {
         if (!id) return;
@@ -119,39 +191,68 @@ export default function Detail() {
             setIsBuying(true);
             const invoice = await auctionService.buyNow(Number(id));
             navigate(`/my-invoices/${invoice.id}`, { state: { invoice } });
-        } catch (error: any) {
-            // eslint-disable-next-line no-console
+        } catch (error: unknown) {
             console.error("Failed to buy now:", error);
-            alert(error?.message || "Không thể thực hiện mua ngay. Vui lòng thử lại.");
+            alert(getErrorMessage(error, "Không thể thực hiện mua ngay. Vui lòng thử lại."));
         } finally {
             setIsBuying(false);
         }
     };
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return (
+            <div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4 py-10">
+                <div className="flex items-center gap-3 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Loading auction details...</span>
+                </div>
+            </div>
+        );
     }
 
     if (error) {
-        return <div>Error: {error.message}</div>;
+        return (
+            <div className="container mx-auto px-4 py-10">
+                <Card className="mx-auto max-w-xl">
+                    <CardContent className="pt-6 text-center text-destructive">
+                        Error: {error.message}
+                    </CardContent>
+                </Card>
+            </div>
+        );
     }
 
     if (!auction) {
-        return <div>No auction data found.</div>;
+        return (
+            <div className="container mx-auto px-4 py-10">
+                <Card className="mx-auto max-w-xl">
+                    <CardContent className="pt-6 text-center text-muted-foreground">
+                        No auction data found.
+                    </CardContent>
+                </Card>
+            </div>
+        );
     }
 
     const { product, startTime, endTime, currentPrice, startPrice, buyNowPrice, reservePriceMet, myMaxBid } = auction;
     const images = product.images.length > 0 ? product.images.map(img => img.url) : ["https://picsum.photos/200"];
     const timeLeft = calculateTimeLeft(endTime);
+    const sellerName = sellerProfile
+        ? `${sellerProfile.firstName} ${sellerProfile.lastName}`.trim() || sellerProfile.username
+        : `${product.seller.firstName} ${product.seller.lastName}`.trim() || product.seller.username;
+    const sellerInitials = getInitials(sellerName || product.seller.username);
+    const sellerJoinedDate = sellerProfile?.createdAt
+        ? format(new Date(sellerProfile.createdAt), 'dd/MM/yyyy')
+        : null;
 
 
     return (
-        <div className="container mx-auto px-4 py-4">
-            <div className="mx-auto flex justify-center">
-                <div className="grid w-full max-w-6xl grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.4fr)]">
+        <div className="container mx-auto px-4 py-6 sm:py-8">
+            <div className="mx-auto max-w-6xl">
+                <div className="grid w-full grid-cols-1 items-start gap-5 md:gap-6 lg:grid-cols-[minmax(0,1.12fr)_minmax(360px,0.88fr)]">
                     {/* Box 1 - Images */}
                     <div className="space-y-3">
-                        <div className="aspect-4/3 flex w-full items-center justify-center overflow-hidden rounded-md border bg-muted">
+                        <div className="aspect-[4/3] flex w-full items-center justify-center overflow-hidden rounded-md border bg-muted">
                             <img
                                 src={images[selectedImageIndex]}
                                 alt="Auction item"
@@ -166,7 +267,7 @@ export default function Detail() {
                                         key={img}
                                         type="button"
                                         onClick={() => setSelectedImageIndex(index)}
-                                        className={`h-16 w-20 shrink-0 overflow-hidden rounded-md border ${selectedImageIndex === index
+                                        className={`h-16 w-20 shrink-0 overflow-hidden rounded-md border transition sm:h-20 sm:w-24 ${selectedImageIndex === index
                                             ? "border-brand ring-2 ring-brand"
                                             : "border-muted-foreground/20"
                                             }`}
@@ -185,17 +286,16 @@ export default function Detail() {
                     {/* Box 2 - Bid info */}
                     <div className="space-y-3">
                         <Card className="shadow-sm">
-                            <CardHeader className="space-y-1">
-                                <CardTitle className="text-2xl font-bold leading-snug">
+                            <CardHeader className="space-y-3">
+                                <CardTitle className="text-xl font-bold leading-snug sm:text-2xl">
                                     {product.name}
                                 </CardTitle>
                                 <Separator />
-                                <CardDescription className="flex items-center gap-2 text-sm">
-                                    <Clock className="h-4 w-4" />
-                                    <span>
+                                <CardDescription className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+                                    <span className="inline-flex items-center gap-2">
+                                        <Clock className="h-4 w-4" />
                                         Time left: <span className="font-bold">{timeLeft}</span>
                                     </span>
-                                    <span className="mx-1">|</span>
                                     <span>
                                         Bids: <span className="font-bold">{bidCount}</span>
                                     </span>
@@ -205,17 +305,17 @@ export default function Detail() {
 
                             <CardContent className="space-y-3">
                                 <div className="space-y-1">
-                                    <div className="flex items-center justify-between pb-3">
+                                    <div className="flex flex-col gap-1 pb-3 sm:flex-row sm:items-center sm:justify-between">
                                         <span className="text-xl font-bold">Current Price:</span>
-                                        <span className="text-xl font-bold text-gray-900 dark:text-white">
+                                        <span className="break-words text-xl font-bold text-gray-900 dark:text-white sm:text-right">
                                             {formatCurrency(currentPrice)}
                                         </span>
                                     </div>
-                                    <div className="flex items-center justify-between text-muted-foreground">
+                                    <div className="flex items-center justify-between gap-3 text-muted-foreground">
                                         <span>Start Price:</span>
-                                        <span>{formatCurrency(startPrice)}</span>
+                                        <span className="text-right">{formatCurrency(startPrice)}</span>
                                     </div>
-                                    <div className={`flex items-center justify-between ${reservePriceMet ? 'text-green-600' : 'text-muted-foreground'}`}>
+                                    <div className={`flex items-center justify-between gap-3 ${reservePriceMet ? 'text-green-600' : 'text-muted-foreground'}`}>
                                         <span>Reserve Price:</span>
                                         <span>{reservePriceMet ? 'Met' : 'Not Met'}</span>
                                     </div>
@@ -225,8 +325,8 @@ export default function Detail() {
 
                                 {buyNowPrice && (
                                     <>
-                                        <div className="space-y-1 text-center">
-                                            <span className="text-lg font-semibold">Buy Now for {formatCurrency(buyNowPrice)}</span>
+                                        <div className="space-y-2 text-center">
+                                            <span className="block text-base font-semibold sm:text-lg">Buy Now for {formatCurrency(buyNowPrice)}</span>
                                             <Button
                                                 type="button"
                                                 className="w-full mt-2 text-white bg-brand hover:bg-brand-hover"
@@ -242,8 +342,8 @@ export default function Detail() {
                                 )}
 
                                 <div className="space-y-1">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span className="whitespace-nowrap text-xl font-semibold">
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                                        <span className="text-lg font-semibold sm:text-xl">
                                             Set Your Maximum Bid:
                                         </span>
                                         <Input
@@ -255,11 +355,11 @@ export default function Detail() {
                                                 setMaxBid(raw);
                                             }}
                                             placeholder={formatCurrency(0)}
-                                            className="w-40"
+                                            className="w-full sm:w-44"
                                         />
                                     </div>
                                     {myMaxBid !== null && myMaxBid !== undefined && (
-                                        <p className="text-right text-xs text-muted-foreground">
+                                        <p className="text-left text-xs text-muted-foreground sm:text-right">
                                             Your current max bid: {formatCurrency(myMaxBid)}
                                         </p>
                                     )}
@@ -268,7 +368,7 @@ export default function Detail() {
                             </CardContent>
                             <CardFooter className="flex flex-col gap-3">
                                 <Button
-                                    className="h-12 w-full bg-fuchsia-800 text-xl font-bold text-white hover:bg-fuchsia-700"
+                                    className="h-12 w-full bg-fuchsia-800 text-base font-bold text-white hover:bg-fuchsia-700 sm:text-xl"
                                     size="lg"
                                     onClick={handlePlaceBid}
                                     disabled={isPlacingBid}
@@ -278,16 +378,16 @@ export default function Detail() {
                             </CardFooter>
                         </Card>
 
-                        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-                            <button type="button" className="inline-flex items-center gap-1 hover:text-brand">
+                        <div className="grid grid-cols-1 gap-2 text-sm text-muted-foreground sm:grid-cols-3">
+                            <button type="button" className="inline-flex items-center justify-center gap-1 rounded-md border px-3 py-2 hover:text-brand">
                                 <MessageCircle className="h-4 w-4" />
                                 <span>Contact Seller</span>
                             </button>
-                            <button type="button" className="inline-flex items-center gap-1 hover:text-brand">
+                            <button type="button" className="inline-flex items-center justify-center gap-1 rounded-md border px-3 py-2 hover:text-brand">
                                 <Printer className="h-4 w-4" />
                                 <span>Print Page</span>
                             </button>
-                            <button type="button" className="inline-flex items-center gap-1 hover:text-brand">
+                            <button type="button" className="inline-flex items-center justify-center gap-1 rounded-md border px-3 py-2 hover:text-brand">
                                 <Share2 className="h-4 w-4" />
                                 <span>Share</span>
                             </button>
@@ -297,39 +397,39 @@ export default function Detail() {
             </div>
 
             {/* Info section */}
-            <div className="mx-auto mt-8 w-full pt-4 mb-12 border-b">
+            <div className="mx-auto mb-12 mt-8 w-full border-b pt-4">
                 <Tabs defaultValue="itemInfo" className="w-full">
-                    <TabsList className="flex h-12 items-end justify-center gap-10 rounded-none border-b bg-transparent p-0">
+                    <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto rounded-none border-b bg-transparent p-0 sm:justify-center sm:gap-10">
                         <TabsTrigger
                             value="itemInfo"
-                            className="rounded-none border-b-2 border-transparent px-3 pb-2 pt-0 text-lg data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                            className="shrink-0 rounded-none border-b-2 border-transparent px-3 pb-2 pt-1 text-sm data-[state=active]:border-primary data-[state=active]:bg-transparent sm:text-lg"
                         >
                             Item Info
                         </TabsTrigger>
                         <TabsTrigger
                             value="shipping"
-                            className="rounded-none border-b-2 border-transparent px-3 pb-2 pt-0 text-lg data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                            className="shrink-0 rounded-none border-b-2 border-transparent px-3 pb-2 pt-1 text-sm data-[state=active]:border-primary data-[state=active]:bg-transparent sm:text-lg"
                         >
                             Shipping
                         </TabsTrigger>
                         <TabsTrigger
                             value="sellerInfo"
-                            className="rounded-none border-b-2 border-transparent px-3 pb-2 pt-0 text-lg data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                            className="shrink-0 rounded-none border-b-2 border-transparent px-3 pb-2 pt-1 text-sm data-[state=active]:border-primary data-[state=active]:bg-transparent sm:text-lg"
                         >
                             Seller Info
                         </TabsTrigger>
                         <TabsTrigger
                             value="bidHistory"
-                            className="rounded-none border-b-2 border-transparent px-3 pb-2 pt-0 text-lg data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                            className="shrink-0 rounded-none border-b-2 border-transparent px-3 pb-2 pt-1 text-sm data-[state=active]:border-primary data-[state=active]:bg-transparent sm:text-lg"
                         >
                             Bid History
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="bidHistory" className="mt-8 max-w-6xl mx-auto">
+                    <TabsContent value="bidHistory" className="mx-auto mt-6 max-w-6xl sm:mt-8">
                         <div className="space-y-4">
-                            <div className="overflow-hidden">
-                                <Table>
+                            <div className="overflow-x-auto rounded-md border">
+                                <Table className="min-w-[760px]">
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Bidder</TableHead>
@@ -369,29 +469,29 @@ export default function Detail() {
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="itemInfo" className="mt-8 max-w-6xl mx-auto">
-                        <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+                    <TabsContent value="itemInfo" className="mx-auto mt-6 max-w-6xl sm:mt-8">
+                        <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] md:gap-8">
                             <div>
-                                <div className="space-y-2.5 text-base bg-muted p-7 rounded-lg">
-                                    <div className="grid grid-cols-[150px_1fr] gap-4">
+                                <div className="space-y-3 rounded-lg bg-muted p-4 text-sm sm:p-7 sm:text-base">
+                                    <div className="grid gap-1 sm:grid-cols-[150px_1fr] sm:gap-4">
                                         <span className="font-semibold text-foreground">Item ID:</span>
-                                        <span className="text-muted-foreground">{product.id}</span>
+                                        <span className="break-words text-muted-foreground">{product.id}</span>
                                     </div>
-                                    <div className="grid grid-cols-[150px_1fr] gap-4">
+                                    <div className="grid gap-1 sm:grid-cols-[150px_1fr] sm:gap-4">
                                         <span className="font-semibold text-foreground">Number of Bids:</span>
-                                        <span className="text-muted-foreground">{bidCount} (High Bidder: {auction.highestBidder?.username || 'N/A'})</span>
+                                        <span className="break-words text-muted-foreground">{bidCount} (High Bidder: {auction.highestBidder?.username || 'N/A'})</span>
                                     </div>
-                                    <div className="grid grid-cols-[150px_1fr] gap-4">
+                                    <div className="grid gap-1 sm:grid-cols-[150px_1fr] sm:gap-4">
                                         <span className="font-semibold text-foreground">Start time:</span>
-                                        <span className="text-muted-foreground">{format(new Date(startTime), 'dd/MM/yyyy HH:mm:ss')}</span>
+                                        <span className="break-words text-muted-foreground">{format(new Date(startTime), 'dd/MM/yyyy HH:mm:ss')}</span>
                                     </div>
-                                    <div className="grid grid-cols-[150px_1fr] gap-4">
+                                    <div className="grid gap-1 sm:grid-cols-[150px_1fr] sm:gap-4">
                                         <span className="font-semibold text-foreground">Ends On:</span>
-                                        <span className="text-muted-foreground">{format(new Date(endTime), 'dd/MM/yyyy HH:mm:ss')}</span>
+                                        <span className="break-words text-muted-foreground">{format(new Date(endTime), 'dd/MM/yyyy HH:mm:ss')}</span>
                                     </div>
-                                    <div className="grid grid-cols-[150px_1fr] gap-4">
+                                    <div className="grid gap-1 sm:grid-cols-[150px_1fr] sm:gap-4">
                                         <span className="font-semibold text-foreground">Seller:</span>
-                                        <span className="text-blue-600">{product.seller.username}</span>
+                                        <span className="break-words text-blue-600">{sellerName}</span>
                                     </div>
                                 </div>
                             </div>
@@ -399,14 +499,14 @@ export default function Detail() {
                             <div className="space-y-3">
                                 <div className="space-y-3">
                                     <h3 className="text-lg font-semibold">Item Description</h3>
-                                    <p className="text-lg text-muted-foreground">
+                                    <p className="whitespace-pre-line text-base leading-7 text-muted-foreground sm:text-lg">
                                         {product.description}
                                     </p>
                                 </div>
 
                                 <div className="space-y-3">
                                     <h3 className="text-lg font-semibold">DISCLAIMER</h3>
-                                    <p className="text-lg text-muted-foreground">
+                                    <p className="text-base leading-7 text-muted-foreground sm:text-lg">
                                         Items are used, donated, and pre-owned. Condition may vary and all items are sold
                                         as-is.
                                     </p>
@@ -420,13 +520,99 @@ export default function Detail() {
                             </div>
                         </div>
                     </TabsContent>
-                    <TabsContent value="shipping" className="mt-4">
-                        <p className="text-muted-foreground">Shipping details will be added here.</p>
+                    <TabsContent value="shipping" className="mx-auto mt-6 max-w-6xl">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-lg">Shipping</CardTitle>
+                                <CardDescription>
+                                    Shipping details will be confirmed after the auction is completed.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
+                                <div className="rounded-md border p-4">
+                                    <p className="font-medium text-foreground">Handling</p>
+                                    <p>Seller will prepare the item after invoice confirmation.</p>
+                                </div>
+                                <div className="rounded-md border p-4">
+                                    <p className="font-medium text-foreground">Payment</p>
+                                    <p>Shipping information is managed from the invoice workflow.</p>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </TabsContent>
-                    <TabsContent value="sellerInfo" className="mt-4">
-                        <p className="text-muted-foreground">
-                            Seller information will be added here.
-                        </p>
+                    <TabsContent value="sellerInfo" className="mx-auto mt-6 max-w-6xl">
+                        <Card>
+                            <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex min-w-0 items-center gap-4">
+                                    <Avatar className="h-14 w-14">
+                                        <AvatarFallback className="bg-brand/10 text-base font-bold text-brand">
+                                            {sellerInitials}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="min-w-0">
+                                        <CardTitle className="truncate text-xl">{sellerName}</CardTitle>
+                                        <CardDescription className="truncate">@{sellerProfile?.username || product.seller.username}</CardDescription>
+                                    </div>
+                                </div>
+                                <Badge variant="outline" className="gap-1 self-start sm:self-center">
+                                    <ShieldCheck className="h-3 w-3" />
+                                    Public seller profile
+                                </Badge>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {isSellerLoading && (
+                                    <div className="flex items-center gap-2 rounded-md border p-4 text-sm text-muted-foreground">
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Loading seller information...
+                                    </div>
+                                )}
+
+                                {sellerError && (
+                                    <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+                                        {sellerError}
+                                    </div>
+                                )}
+
+                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                    <div className="rounded-md border p-4">
+                                        <div className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                            <UserRound className="h-4 w-4" />
+                                            Username
+                                        </div>
+                                        <p className="break-words font-semibold">{sellerProfile?.username || product.seller.username}</p>
+                                    </div>
+                                    <div className="rounded-md border p-4">
+                                        <div className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                            <Star className="h-4 w-4" />
+                                            Reputation
+                                        </div>
+                                        <p className="font-semibold">{sellerProfile?.reputationScore ?? "--"}</p>
+                                    </div>
+                                    <div className="rounded-md border p-4">
+                                        <div className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                            <CalendarDays className="h-4 w-4" />
+                                            Joined
+                                        </div>
+                                        <p className="font-semibold">{sellerJoinedDate || "--"}</p>
+                                    </div>
+                                    <div className="rounded-md border p-4">
+                                        <div className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                            <Phone className="h-4 w-4" />
+                                            Phone
+                                        </div>
+                                        <p className="break-words font-semibold">{product.seller.phoneNumber || "--"}</p>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-md border p-4">
+                                    <div className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                        <Mail className="h-4 w-4" />
+                                        Contact email
+                                    </div>
+                                    <p className="break-words font-semibold">{product.seller.email || "--"}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </TabsContent>
                 </Tabs>
             </div>

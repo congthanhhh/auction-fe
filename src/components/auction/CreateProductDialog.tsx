@@ -22,6 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { ImagePlus, Loader2, Plus, Trash2, X } from "lucide-react";
 
 interface CreateProductDialogProps {
     onCreated?: () => void;
@@ -48,7 +49,6 @@ export function CreateProductDialog({ onCreated }: CreateProductDialogProps) {
                 const res = await categoryService.getCategories(1, 100);
                 setCategoriesForProduct(res.data ?? []);
             } catch (err) {
-                // eslint-disable-next-line no-console
                 console.error("Failed to fetch categories for product form:", err);
             }
         };
@@ -123,7 +123,7 @@ export function CreateProductDialog({ onCreated }: CreateProductDialogProps) {
         } catch (err) {
             const message =
                 err && typeof err === "object" && "message" in err
-                    ? String((err as any).message)
+                    ? String((err as Error).message)
                     : "Không thể tạo sản phẩm";
             setProductError(message);
         } finally {
@@ -135,6 +135,7 @@ export function CreateProductDialog({ onCreated }: CreateProductDialogProps) {
         <Dialog>
             <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="mt-4 sm:mt-0">
+                    <Plus className="size-4" />
                     Tạo sản phẩm mới
                 </Button>
             </DialogTrigger>
@@ -231,7 +232,7 @@ export function CreateProductDialog({ onCreated }: CreateProductDialogProps) {
                                                 );
                                             }}
                                         >
-                                            -
+                                            <X className="size-4" />
                                         </Button>
                                     )}
                                 </div>
@@ -244,7 +245,8 @@ export function CreateProductDialog({ onCreated }: CreateProductDialogProps) {
                                     setAttributeRows((prev) => [...prev, { name: "", value: "" }])
                                 }
                             >
-                                + Thêm thuộc tính
+                                <Plus className="size-4" />
+                                Thêm thuộc tính
                             </Button>
                         </div>
                     </div>
@@ -273,7 +275,7 @@ export function CreateProductDialog({ onCreated }: CreateProductDialogProps) {
                                 } catch (err) {
                                     const message =
                                         err && typeof err === "object" && "message" in err
-                                            ? String((err as any).message)
+                                            ? String((err as Error).message)
                                             : "Không thể upload hình ảnh";
                                     setProductError(message);
                                 } finally {
@@ -285,7 +287,10 @@ export function CreateProductDialog({ onCreated }: CreateProductDialogProps) {
                         />
 
                         {isUploadingImage && (
-                            <p className="text-[11px] text-muted-foreground">Đang upload ảnh...</p>
+                            <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                <Loader2 className="size-3 animate-spin" />
+                                Đang upload ảnh...
+                            </p>
                         )}
                         {images.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-3">
@@ -306,7 +311,6 @@ export function CreateProductDialog({ onCreated }: CreateProductDialogProps) {
                                                 try {
                                                     await imageService.deleteImage(img.id);
                                                 } catch (err) {
-                                                    // eslint-disable-next-line no-console
                                                     console.error("Failed to delete image", err);
                                                 } finally {
                                                     setImages((prev) =>
@@ -315,7 +319,7 @@ export function CreateProductDialog({ onCreated }: CreateProductDialogProps) {
                                                 }
                                             }}
                                         >
-                                            ×
+                                            <Trash2 className="size-3" />
                                         </button>
                                     </div>
                                 ))}
@@ -333,6 +337,7 @@ export function CreateProductDialog({ onCreated }: CreateProductDialogProps) {
                 </div>
                 <DialogFooter showCloseButton>
                     <Button type="button" onClick={handleCreateProduct} disabled={isCreatingProduct}>
+                        {isCreatingProduct ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
                         {isCreatingProduct ? "Đang tạo..." : "Tạo sản phẩm"}
                     </Button>
                 </DialogFooter>

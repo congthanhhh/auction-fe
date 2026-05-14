@@ -20,6 +20,14 @@ export const InvoiceType = {
 
 export type InvoiceType = (typeof InvoiceType)[keyof typeof InvoiceType];
 
+export const DisputeDecision = {
+    PENDING: "PENDING",
+    REFUND_TO_BUYER: "REFUND_TO_BUYER",
+    RELEASE_TO_SELLER: "RELEASE_TO_SELLER",
+} as const;
+
+export type DisputeDecision = (typeof DisputeDecision)[keyof typeof DisputeDecision];
+
 export interface SimpleProductResponse {
     id: number;
     name: string;
@@ -40,6 +48,7 @@ export interface InvoiceResponse {
     type: InvoiceType;
     shippingAddress: string;
     recipientName: string;
+    recipientEmail?: string | null;
     recipientPhone: string;
     trackingCode: string | null;
     carrier: string | null;
@@ -57,4 +66,14 @@ export interface ShipInvoiceRequest {
 
 export interface DisputeRequest {
     reason: string;
+}
+
+export interface DisputeResponse {
+    id: number;
+    invoiceId: number;
+    reason: string;
+    decision: DisputeDecision;
+    adminNote?: string | null;
+    createdAt: string;
+    resolvedAt?: string | null;
 }

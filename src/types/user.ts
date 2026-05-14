@@ -1,19 +1,38 @@
 // User & profile related types
 
+export interface PermissionResponse {
+    name: string;
+    description: string;
+}
+
+export interface RoleResponse {
+    name: string;
+    description: string;
+    permissions?: PermissionResponse[];
+}
+
 export interface UserProfileResponse {
     id: string;
     username: string;
+    firstName: string;
+    lastName: string;
     email: string;
-    firstName?: string;
-    lastName?: string;
-    phone?: string;
-    city?: string;
-    country?: string;
-    // Aggregated stats
-    totalFeedback?: number;
-    itemsWon?: number;
-    itemsSold?: number;
-    totalSpent?: number;
+    phoneNumber?: string | null;
+    noPassword: boolean;
+    isActive?: boolean | null;
+    strikeCount?: number | null;
+    reputationScore?: number | null;
+    createdAt: string;
+    roles: RoleResponse[];
+}
+
+export interface PublicUserProfileResponse {
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    reputationScore: number;
+    createdAt: string;
 }
 
 // Address DTOs (align with backend contracts)

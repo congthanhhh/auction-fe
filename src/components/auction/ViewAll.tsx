@@ -1,72 +1,142 @@
-import { useState, useEffect } from "react"
-import ViewAllCard from "@/components/auction/ViewAllCard"
+import { useEffect, useState } from "react"
+import ViewAllCard, { type AuctionListItem, type ProductFilterState } from "@/components/auction/ViewAllCard"
+import { productService } from "@/services/productService"
+import { categoryService } from "@/services/categoryService"
 import { auctionService } from "@/services/auctionService"
-import type { AuctionSessionResponse, PageResponse } from "@/types/auction"
+import type {
+    AuctionSessionResponse,
+    CategoryResponse,
+    PageResponse,
+    ProductResponse,
+    ProductSearchRequest,
+} from "@/types/auction"
 import { calculateTimeRemaining } from "@/lib/utils"
 
-interface AuctionItem {
-    id: number
-    title: string
-    image: string
-    currentBid: number
-    bids: number
-    timeRemaining: string
-    isBuyNow?: boolean
-    buyNowPrice?: number
+const searchBatchSize = 1000
+
+function mapSortToProductSearchSort(sortBy: string): string {
+    switch (sortBy) {
+        case "oldest":
+        case "price_asc":
+        case "price_desc":
+        case "newest":
+            return sortBy
+        default:
+            return "newest"
+    }
+}
+
+function mapSessionToAuctionItem(session: AuctionSessionResponse): AuctionListItem {
+    const hasBids = session.currentPrice > session.startPrice || session.highestBidder !== null
+
+    return {
+        id: session.id,
+        productId: session.product.id,
+        title: session.product.name,
+        image: session.product.images[0]?.url || "https://placehold.co/400x400?text=No+Image",
+        currentBid: session.currentPrice,
+        bids: hasBids ? 1 : 0,
+        timeRemaining: calculateTimeRemaining(session.endTime),
+        isBuyNow: Boolean(session.buyNowPrice) && !hasBids,
+        buyNowPrice: session.buyNowPrice ?? undefined,
+    }
 }
 
 export default function ViewAll() {
     const [currentPage, setCurrentPage] = useState(1)
-    const [itemsPerPage, setItemsPerPage] = useState(12)
+    const [itemsPerPage] = useState(12)
     const [totalItems, setTotalItems] = useState(0)
-    const [items, setItems] = useState<AuctionItem[]>([])
-    const [sortBy, setSortBy] = useState("ending-soon")
-    const [filters, setFilters] = useState({})
+    const [items, setItems] = useState<AuctionListItem[]>([])
+    const [categories, setCategories] = useState<CategoryResponse[]>([])
+    const [sortBy, setSortBy] = useState("newest")
+    const [filters, setFilters] = useState<ProductFilterState>({})
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        const fetchAuctions = async () => {
+        let isMounted = true
+
+        const fetchCategories = async () => {
+            try {
+                const response = await categoryService.getCategories(1, 100)
+                if (isMounted) setCategories(response.data ?? [])
+            } catch (err) {
+                console.error("Failed to load categories for product filters:", err)
+                if (isMounted) setCategories([])
+            }
+        }
+
+        fetchCategories()
+
+        return () => {
+            isMounted = false
+        }
+    }, [])
+
+    useEffect(() => {
+        let isMounted = true
+
+        const fetchAuctionItems = async () => {
             try {
                 setLoading(true)
                 setError(null)
 
-                const pageResponse: PageResponse<AuctionSessionResponse> =
-                    await auctionService.getActiveAuctionSessionsDesc(currentPage, itemsPerPage)
+                const searchParams: ProductSearchRequest = {
+                    keyword: filters.keyword?.trim() || undefined,
+                    categoryId: filters.categoryId,
+                    minPrice: filters.priceMin,
+                    maxPrice: filters.priceMax,
+                    status: "ACTIVE",
+                    isActive: true,
+                    sort: mapSortToProductSearchSort(sortBy),
+                }
 
-                setTotalItems(pageResponse.totalElements)
-                setItemsPerPage(pageResponse.pageSize)
+                const [productResponse, sessionResponse]: [
+                    PageResponse<ProductResponse>,
+                    PageResponse<AuctionSessionResponse>,
+                ] = await Promise.all([
+                    productService.searchProducts(searchParams, 1, searchBatchSize),
+                    auctionService.getActiveAuctionSessionsDesc(1, searchBatchSize),
+                ])
 
-                const mappedItems: AuctionItem[] = pageResponse.data.map((auction) => {
-                    const hasBids = auction.currentPrice > auction.startPrice || auction.highestBidder !== null
-                    const bidCount = hasBids ? 1 : 0 // TODO: update when backend provides bid count
+                if (!isMounted) return
 
-                    return {
-                        id: auction.id,
-                        title: auction.product.name,
-                        image:
-                            auction.product.images[0]?.url || "https://picsum.photos/200",
-                        currentBid: auction.currentPrice,
-                        bids: bidCount,
-                        timeRemaining: calculateTimeRemaining(auction.endTime),
-                        isBuyNow: !!auction.buyNowPrice && !hasBids,
-                        buyNowPrice: auction.buyNowPrice ?? undefined,
-                    }
-                })
+                const productOrder = new Map(
+                    productResponse.data.map((product, index) => [product.id, index]),
+                )
 
-                setItems(mappedItems)
+                const matchedSessions = sessionResponse.data
+                    .filter((session) => (
+                        session.product.status === "ACTIVE" &&
+                        productOrder.has(session.product.id)
+                    ))
+                    .sort((a, b) => {
+                        const aIndex = productOrder.get(a.product.id) ?? Number.MAX_SAFE_INTEGER
+                        const bIndex = productOrder.get(b.product.id) ?? Number.MAX_SAFE_INTEGER
+                        return aIndex - bIndex
+                    })
+
+                const startIndex = (currentPage - 1) * itemsPerPage
+                const currentPageSessions = matchedSessions.slice(startIndex, startIndex + itemsPerPage)
+
+                setTotalItems(matchedSessions.length)
+                setItems(currentPageSessions.map(mapSessionToAuctionItem))
             } catch (err) {
-                console.error("Failed to fetch auctions for View All:", err)
+                if (!isMounted) return
+                console.error("Failed to load filtered auction items for View All:", err)
                 setError("Failed to load auction items. Please try again later.")
                 setItems([])
+                setTotalItems(0)
             } finally {
-                setLoading(false)
+                if (isMounted) setLoading(false)
             }
         }
 
-        // Note: sortBy, filters hiện tại chưa được backend hỗ trợ,
-        // nên chỉ được dùng để trigger refetch khi UI thay đổi.
-        fetchAuctions()
+        fetchAuctionItems()
+
+        return () => {
+            isMounted = false
+        }
     }, [currentPage, itemsPerPage, sortBy, filters])
 
     const handlePageChange = (page: number) => {
@@ -78,7 +148,7 @@ export default function ViewAll() {
         setCurrentPage(1)
     }
 
-    const handleFilterChange = (newFilters: any) => {
+    const handleFilterChange = (newFilters: ProductFilterState) => {
         setFilters(newFilters)
         setCurrentPage(1)
     }
@@ -106,6 +176,7 @@ export default function ViewAll() {
             totalItems={totalItems}
             itemsPerPage={itemsPerPage}
             currentPage={currentPage}
+            categories={categories}
             onPageChange={handlePageChange}
             onSortChange={handleSortChange}
             onFilterChange={handleFilterChange}

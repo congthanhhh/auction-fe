@@ -46,6 +46,7 @@ export const API_ENDPOINTS = {
   // User
   USER: {
     MY_PROFILE: '/users/my-profile',
+    PUBLIC_PROFILE: (userId: string) => `/users/${userId}/public-profile`,
     UPDATE_MY_INFO: '/users/update-my-info',
     CHANGE_PASSWORD: '/users/change-password',
     CREATE_OTP: '/users/otp',
@@ -62,7 +63,10 @@ export const API_ENDPOINTS = {
   INVOICE: {
     MY_INVOICES: '/invoices/my-invoices',
     MY_SALES: '/invoices/my-sales',
+    MY_LISTING_FEES: '/invoices/my-listing-fees',
+    SOLD_INVOICES: '/invoices/sold-invoices',
     DETAIL: (id: number) => `/invoices/${id}`,
+    DISPUTE_DETAIL: (invoiceId: number) => `/invoices/dispute/${invoiceId}`,
     SHIP: (id: number) => `/invoices/${id}/ship`,
     CONFIRM: (id: number) => `/invoices/${id}/confirm`,
     DISPUTE: (id: number) => `/invoices/${id}/dispute`,

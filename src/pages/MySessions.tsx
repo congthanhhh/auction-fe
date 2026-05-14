@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import MySessionsList from "@/components/auction/MySessionsList";
 import { CreateProductDialog } from "@/components/auction/CreateProductDialog";
 import { CreateSessionDialog } from "@/components/auction/CreateSessionDialog";
@@ -8,6 +8,17 @@ import { useRequireAuth } from "@/hooks/use-require-auth";
 import { SimplePagination } from "@/components/common/SimplePagination";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Gavel } from "lucide-react";
+import { auctionStatusLabels } from "@/types/auction-labels";
+
+const statusFilterOptions: { value: "ALL" | AuctionStatus; label: string }[] = [
+    { value: "ALL", label: "Tất cả" },
+    { value: "SCHEDULED", label: auctionStatusLabels.SCHEDULED },
+    { value: "ACTIVE", label: auctionStatusLabels.ACTIVE },
+    { value: "WAITING_PAYMENT", label: auctionStatusLabels.WAITING_PAYMENT },
+    { value: "ENDED", label: auctionStatusLabels.ENDED },
+    { value: "CANCELLED", label: auctionStatusLabels.CANCELLED },
+    { value: "FAILED", label: auctionStatusLabels.FAILED },
+];
 
 export default function MySessions() {
     const requireAuth = useRequireAuth();
@@ -19,50 +30,52 @@ export default function MySessions() {
     const [page, setPage] = useState<number>(1);
     const [size] = useState<number>(10);
     const [statusFilter, setStatusFilter] = useState<"ALL" | AuctionStatus>("ALL");
+
     useEffect(() => {
         const allowed = requireAuth();
         if (!allowed) return;
     }, [requireAuth]);
 
-    useEffect(() => {
-        let isMounted = true;
+    const fetchMySessions = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
 
-        const fetchMySessions = async () => {
-            setIsLoading(true);
-            setError(null);
+        try {
+            const response = await auctionService.getMySessions(
+                page,
+                size,
+                statusFilter === "ALL" ? undefined : statusFilter,
+            );
 
-            try {
-                const response = await auctionService.getMySessions(
-                    page,
-                    size,
-                    statusFilter === "ALL" ? undefined : statusFilter,
-                );
-
-                if (isMounted) {
-                    setPageData(response);
-                }
-            } catch (err) {
-                if (!isMounted) return;
-                const message =
-                    err && typeof err === "object" && "message" in err
-                        ? String((err as any).message)
-                        : "Không thể tải danh sách phiên của bạn";
-                setError(message);
-            } finally {
-                if (isMounted) {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        fetchMySessions();
-
-        return () => {
-            isMounted = false;
-        };
+            setPageData(response);
+        } catch (err) {
+            const message =
+                err && typeof err === "object" && "message" in err
+                    ? String((err as Error).message)
+                    : "Không thể tải danh sách phiên của bạn";
+            setError(message);
+        } finally {
+            setIsLoading(false);
+        }
     }, [page, size, statusFilter]);
 
+    useEffect(() => {
+        let isActive = true;
+
+        const load = async () => {
+            if (!isActive) return;
+            await fetchMySessions();
+        };
+
+        load();
+
+        return () => {
+            isActive = false;
+        };
+    }, [fetchMySessions]);
+
     const totalPages = pageData?.totalPages ?? 1;
+    const totalElements = pageData?.totalElements ?? 0;
 
     const handleToggleStatus = async (session: AuctionSessionResponse) => {
         try {
@@ -82,13 +95,13 @@ export default function MySessions() {
                 if (!prev) return prev;
                 return {
                     ...prev,
-                    data: prev.data.map((s) => (s.id === updatedSession!.id ? updatedSession! : s)),
+                    data: prev.data.map((item) => (item.id === updatedSession.id ? updatedSession : item)),
                 };
             });
         } catch (err) {
             const message =
                 err && typeof err === "object" && "message" in err
-                    ? String((err as any).message)
+                    ? String((err as Error).message)
                     : "Không thể cập nhật trạng thái phiên";
             setError(message);
         }
@@ -99,46 +112,73 @@ export default function MySessions() {
     };
 
     return (
-        <div className="bg-gray-50 dark:bg-gray-950 py-8 min-h-screen">
-            <div className="container mx-auto px-4 space-y-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="bg-brand2/10 p-2 rounded-full">
-                            <Gavel className="h-6 w-6 text-brand2" />
+        <div className="min-h-screen bg-slate-50 py-8 dark:bg-gray-950">
+            <div className="container mx-auto space-y-6 px-4">
+                <div className="flex flex-col gap-4 rounded-lg border bg-white p-5 shadow-sm dark:bg-gray-900">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="flex size-11 items-center justify-center rounded-md bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                                <Gavel className="size-5" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-950 dark:text-white">
+                                    Quản lý phiên đấu giá
+                                </h1>
+                                <p className="text-sm text-muted-foreground">
+                                    Tạo phiên, chỉnh thời gian và xử lý trạng thái phiên của sản phẩm.
+                                </p>
+                            </div>
                         </div>
-                        <h1 className="text-2xl font-bold text-brand2 dark:text-white">
-                            Quản lý Phiên Đấu Giá
-                        </h1>
-                    </div>
-                    <div className="flex flex-wrap gap-3 text-sm items-center">
-                        <CreateProductDialog />
-                        <CreateSessionDialog />
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <div className="rounded-md border bg-slate-50 px-4 py-2 text-sm dark:bg-gray-950">
+                                <span className="text-muted-foreground">Tổng phiên: </span>
+                                <span className="font-semibold text-foreground">{totalElements}</span>
+                            </div>
+                            <div className="flex flex-col gap-2 sm:flex-row">
+                                <CreateProductDialog />
+                                <CreateSessionDialog onCreated={fetchMySessions} />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <Tabs defaultValue="ALL" value={statusFilter} onValueChange={(value) => { setStatusFilter(value as any); setPage(1); }} className="w-full">
-                    <TabsList className="w-full flex justify-start overflow-x-auto h-auto p-1 bg-white dark:bg-gray-900 border rounded-lg">
-                        <TabsTrigger value="ALL" className="py-2.5 data-[state=active]:bg-brand2/10 data-[state=active]:text-brand2">Tất cả</TabsTrigger>
-                        <TabsTrigger value="SCHEDULED" className="py-2.5 data-[state=active]:bg-brand2/10 data-[state=active]:text-brand2">Chưa bắt đầu</TabsTrigger>
-                        <TabsTrigger value="ACTIVE" className="py-2.5 data-[state=active]:bg-brand2/10 data-[state=active]:text-brand2">Đang diễn ra</TabsTrigger>
-                        <TabsTrigger value="WAITING_PAYMENT" className="py-2.5 data-[state=active]:bg-brand2/10 data-[state=active]:text-brand2">Chờ thanh toán</TabsTrigger>
-                        <TabsTrigger value="ENDED" className="py-2.5 data-[state=active]:bg-brand2/10 data-[state=active]:text-brand2">Đã kết thúc</TabsTrigger>
-                        <TabsTrigger value="CANCELLED" className="py-2.5 data-[state=active]:bg-brand2/10 data-[state=active]:text-brand2">Đã hủy</TabsTrigger>
-                        <TabsTrigger value="FAILED" className="py-2.5 data-[state=active]:bg-brand2/10 data-[state=active]:text-brand2">Không thành công</TabsTrigger>
+                <Tabs
+                    value={statusFilter}
+                    onValueChange={(value) => {
+                        setStatusFilter(value as "ALL" | AuctionStatus);
+                        setPage(1);
+                    }}
+                    className="w-full"
+                >
+                    <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-lg border bg-white p-1 dark:bg-gray-900">
+                        {statusFilterOptions.map((opt) => (
+                            <TabsTrigger
+                                key={opt.value}
+                                value={opt.value}
+                                className="min-h-9 data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 dark:data-[state=active]:bg-indigo-950/40 dark:data-[state=active]:text-indigo-200"
+                            >
+                                {opt.label}
+                            </TabsTrigger>
+                        ))}
                     </TabsList>
                 </Tabs>
 
                 {isLoading && (
-                    <p className="text-sm text-muted-foreground">Đang tải danh sách phiên của bạn...</p>
+                    <p className="rounded-lg border bg-white p-4 text-sm text-muted-foreground dark:bg-gray-900">
+                        Đang tải danh sách phiên của bạn...
+                    </p>
                 )}
                 {error && !isLoading && (
-                    <p className="text-sm text-red-600">{error}</p>
+                    <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
+                        {error}
+                    </p>
                 )}
 
                 {!isLoading && !error && (
                     <MySessionsList
                         sessions={pageData?.data ?? []}
                         onToggleStatus={handleToggleStatus}
+                        onSessionUpdated={fetchMySessions}
                     />
                 )}
 
