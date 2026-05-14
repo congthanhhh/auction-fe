@@ -44,14 +44,27 @@ export interface OtpVerificationRequest {
     otp: string;
 }
 
+export interface ForgotPasswordRequest {
+    email: string;
+}
+
+export interface ResetPasswordRequest {
+    email: string;
+    otp: string;
+    newPassword: string;
+}
+
 // JWT Payload interface (nếu cần decode token)
 export interface JWTPayload {
     sub: string; // subject (thường là userId hoặc username)
     exp: number; // expiration time (Unix timestamp in seconds)
     iat: number; // issued at
     // Có thể có thêm các field khác
+    userId?: string;
+    username?: string;
     email?: string;
     role?: string;
+    authorities?: string[];
 }
 
 // Auth Store State

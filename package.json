@@ -4,8 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host localhost --port 5173 --strictPort",
+    "dev:local": "vite --mode development --host localhost --port 5173 --strictPort",
+    "dev:remote": "vite --mode production --host localhost --port 5173 --strictPort",
     "build": "tsc -b && vite build",
+    "build:local": "tsc -b && vite build --mode development",
+    "build:remote": "tsc -b && vite build --mode production",
     "lint": "eslint .",
     "preview": "vite preview"
   },

@@ -1,11 +1,19 @@
 import io from 'socket.io-client';
 import { useAuthStore } from '@/stores/authStore';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
-// const SOCKET_URL = 'http://localhost:9092';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? 'http://localhost:9092';
+
+interface SocketClient {
+    disconnected: boolean;
+    id?: string;
+    disconnect: () => void;
+    emit: (eventName: string, roomName: string) => void;
+    on: <T = unknown>(eventName: string, callback: (data: T) => void) => void;
+    off: (eventName: string) => void;
+}
 
 class SocketService {
-    private socket: any | null = null;
+    private socket: SocketClient | null = null;
 
     connect() {
         if (!this.socket || this.socket.disconnected) {
@@ -21,17 +29,17 @@ class SocketService {
                 query: {
                     token: accessToken,
                 },
-            });
+            }) as SocketClient;
 
             this.socket.on('connect', () => {
                 console.log('Socket.IO connected:', this.socket?.id);
             });
 
-            this.socket.on('disconnect', (reason: any) => {
+            this.socket.on('disconnect', (reason: unknown) => {
                 console.log('Socket.IO disconnected:', reason);
             });
 
-            this.socket.on('connect_error', (error: any) => {
+            this.socket.on('connect_error', (error: unknown) => {
                 console.error('Socket.IO connection error:', error);
             });
         }

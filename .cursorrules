@@ -1,0 +1,228 @@
+# Cursor IDE Rules for Auction Frontend
+
+## Project Setup
+- **Framework:** React 19 + TypeScript + Vite
+- **Styling:** Tailwind CSS 4.2 + Shadcn/UI
+- **State:** Zustand (store in src/stores/)
+- **API:** Axios with automatic token refresh
+- **Routing:** React Router v7 with layout-based pattern
+
+## Code Organization
+
+### Folder Structure
+- `src/components/` - UI components (organized by feature)
+- `src/pages/` - Route components
+- `src/services/` - API service layer
+- `src/stores/` - Zustand global state
+- `src/types/` - TypeScript interfaces
+- `src/hooks/` - Custom React hooks
+- `src/constants/` - Constants & configs
+- `src/utils/` - Utility functions
+- `src/lib/` - Library utilities
+
+### Naming Conventions
+- Components: PascalCase (e.g., `AuctionCard.tsx`)
+- Functions/Services: camelCase (e.g., `getAuctionDetail()`)
+- Constants: UPPER_SNAKE_CASE (e.g., `API_BASE_URL`)
+- Types: PascalCase (e.g., `AuctionSession`, `UserResponse`)
+- Stores: camelCase with `Store` suffix (e.g., `authStore.ts`)
+
+## Component Patterns
+
+### Functional Component Template
+```typescript
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+
+interface Props {
+  onClose?: () => void;
+}
+
+export function MyComponent({ onClose }: Props) {
+  const [state, setState] = useState('');
+
+  const handleAction = () => {
+    // Implementation
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Content */}
+    </div>
+  );
+}
+
+export default MyComponent;
+```
+
+### Service Pattern
+```typescript
+import { api } from './api';
+import { API_ENDPOINTS } from '@/constants/api';
+
+export const myService = {
+  getData: async (id: string) => {
+    const response = await api.get(API_ENDPOINTS.MY.GET(id));
+    return response as MyType;
+  },
+};
+```
+
+### Store Pattern (Zustand)
+```typescript
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+interface MyStore {
+  count: number;
+  increment: () => void;
+}
+
+export const useMyStore = create<MyStore>()(
+  persist(
+    (set) => ({
+      count: 0,
+      increment: () => set((state) => ({ count: state.count + 1 })),
+    }),
+    { name: 'my-store' }
+  )
+);
+```
+
+## Rules & Constraints
+
+### TypeScript
+- Always define types (no `any`)
+- Use interfaces over types for data structures
+- Use enums for constants (see `src/types/auction.ts`)
+- Export types that are used across files
+
+### API Integration
+- All endpoints in `src/constants/api.ts`
+- Always use the Axios instance from `src/services/api.ts`
+- Return typed responses (not generic types)
+- Handle both success and error states
+- Token refresh is automatic (Axios interceptor)
+
+### Authentication
+- Use `useAuthStore()` for auth state
+- Use `useRequireAuth()` hook to protect actions
+- Redirect to `/signin?redirectTo=...` if not authenticated
+- Access token in localStorage, refresh token in httpOnly cookie
+
+### UI/UX
+- Use Shadcn/UI components (not HTML elements)
+- Tailwind for all styling
+- Show loading states on async actions
+- Display error/success toasts for user feedback
+- Mobile-first responsive design
+
+### Performance
+- Use `useCallback` for event handlers passed to child components
+- Avoid inline function definitions
+- Use `React.memo()` for expensive components
+- Code-split pages (React.lazy if needed)
+
+### File Size
+- Keep components under 300 lines
+- Extract custom hooks for reusable logic
+- Break large features into smaller modules
+
+## Common Imports
+
+```typescript
+// UI Components
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+
+// State Management
+import { useAuthStore } from '@/stores/authStore';
+import { useNotificationStore } from '@/stores/notificationStore';
+
+// Utilities
+import { cn } from '@/lib/utils';
+import { useRequireAuth } from '@/hooks/use-require-auth';
+
+// Types
+import type { AuctionSessionResponse } from '@/types/auction';
+
+// Services
+import { auctionService } from '@/services/auctionService';
+import { api } from '@/services/api';
+```
+
+## Commands
+
+```bash
+npm run dev      # Start dev server
+npm run build    # Production build
+npm run lint     # Check ESLint
+npm run preview  # Preview build
+```
+
+## Common Tasks
+
+### Add New Route
+1. Create page component in `src/pages/`
+2. Add route to `src/App.tsx`
+3. Add to navigation if needed
+
+### Add New API Call
+1. Define types in `src/types/`
+2. Add endpoint to `src/constants/api.ts`
+3. Create service method in `src/services/`
+4. Use in component with proper error handling
+
+### Add Global State
+1. Create store in `src/stores/`
+2. Use `create()` from zustand
+3. Add `persist` middleware if needed
+4. Export as `useMyStore` hook
+
+### Add Form
+1. Use Shadcn/UI `<Input>`, `<Button>`, etc.
+2. Handle with `useState` or form library
+3. Validate before submit
+4. Show loading state
+5. Display success/error feedback
+
+## Performance Checklist
+
+- [ ] No console.logs in production
+- [ ] All async operations have loading/error states
+- [ ] Images are optimized/lazy-loaded
+- [ ] No unnecessary re-renders
+- [ ] API calls are debounced/throttled if needed
+
+## File Structure Example
+
+When adding a new feature (e.g., "BidHistory"):
+```
+src/
+├── components/auction/BidHistory.tsx
+├── services/bidService.ts (update or create)
+├── stores/bidDetailStore.ts (if global state needed)
+├── types/bid.ts
+├── constants/api.ts (add endpoint)
+└── pages/BidHistoryPage.tsx (if new page)
+```
+
+## Important Notes
+
+- ✅ Always use TypeScript types
+- ✅ Keep API calls in services (not components)
+- ✅ Use Zustand for global state
+- ✅ Handle all error cases
+- ✅ Show user feedback (loading, success, error)
+- ❌ Don't use `require()` - use ES6 imports
+- ❌ Don't bypass Axios instance
+- ❌ Don't hardcode URLs/endpoints
+- ❌ Don't leave console.logs
+- ❌ Don't use `any` types
+
+## Documentation References
+- See `AGENTS.md` for full project guide
+- See `MYFLOW.md` for feature planning
+- See `AUTH_IMPLEMENTATION.md` for auth flow
+- See `API_WORKFLOW.md` for API patterns

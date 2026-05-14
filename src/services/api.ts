@@ -3,6 +3,12 @@ import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
 import { authService } from './authService';
 
+interface ApiErrorPayload {
+  message?: string;
+  code?: string;
+  errors?: unknown;
+}
+
 // Flag to prevent multiple simultaneous refresh requests
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
@@ -38,6 +44,9 @@ api.interceptors.request.use(
       API_ENDPOINTS.AUTH.REGISTER,
       API_ENDPOINTS.AUTH.REFRESH_TOKEN,
       API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
+      API_ENDPOINTS.AUTH.RESET_PASSWORD,
+      API_ENDPOINTS.USER.FORGOT_PASSWORD,
+      API_ENDPOINTS.USER.RESET_PASSWORD,
     ];
 
     const isPublicEndpoint = publicEndpoints.some(endpoint =>
@@ -72,7 +81,7 @@ api.interceptors.request.use(
           if (config.headers) {
             config.headers.Authorization = `Bearer ${newToken}`;
           }
-        } catch (error) {
+        } catch {
           isRefreshing = false;
 
           // Nếu refresh thất bại, vẫn thử dùng token cũ
@@ -111,7 +120,7 @@ api.interceptors.response.use(
   (response) => {
     return response.data;
   },
-  async (error: AxiosError<any>) => {
+  async (error: AxiosError<ApiErrorPayload>) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     // Xử lý lỗi 401 - Unauthorized (Token hết hạn)

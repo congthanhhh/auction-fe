@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react"
-import { ForgotPasswordDialog } from "@/components/auth"
+import { ForgotPasswordDialog, ResetPasswordDialog } from "@/components/auth"
 import { useAuthStore } from "@/stores/authStore"
 import type { AuthenticationRequest } from "@/types/auth"
 
@@ -21,6 +21,9 @@ export const SignIn = () => {
     const [rememberMe, setRememberMe] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false)
+    const [resetPasswordOpen, setResetPasswordOpen] = useState(false)
+    const [resetPasswordEmail, setResetPasswordEmail] = useState("")
+    const [passwordResetMessage, setPasswordResetMessage] = useState<string | null>(null)
 
     // Redirect nếu đã đăng nhập
     useEffect(() => {
@@ -49,6 +52,7 @@ export const SignIn = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         clearError()
+        setPasswordResetMessage(null)
 
         // Validate input
         if (!usernameOrEmail.trim() || !password.trim()) {
@@ -72,6 +76,15 @@ export const SignIn = () => {
             // Error đã được xử lý trong store
             console.error('Login error:', err)
         }
+    }
+
+    const handlePasswordOtpSent = (email: string) => {
+        setResetPasswordEmail(email)
+        setResetPasswordOpen(true)
+    }
+
+    const handleResetPasswordSuccess = () => {
+        setPasswordResetMessage("Mật khẩu đã được đặt lại. Vui lòng đăng nhập bằng mật khẩu mới.")
     }
 
     return (
@@ -120,6 +133,11 @@ export const SignIn = () => {
                                     </div>
                                 </div>
                             )}
+                            {passwordResetMessage && !error && (
+                                <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+                                    {passwordResetMessage}
+                                </div>
+                            )}
 
                             <div className="space-y-2 text-brand2">
                                 <Label htmlFor="usernameOrEmail">Username hoặc Email</Label>
@@ -138,7 +156,10 @@ export const SignIn = () => {
                                     <Label htmlFor="password">Mật khẩu</Label>
                                     <button
                                         type="button"
-                                        onClick={() => setForgotPasswordOpen(true)}
+                                        onClick={() => {
+                                            setPasswordResetMessage(null)
+                                            setForgotPasswordOpen(true)
+                                        }}
                                         className="text-sm text-brand hover:text-brand-hover hover:underline"
                                         disabled={isLoading}
                                     >
@@ -264,6 +285,13 @@ export const SignIn = () => {
                 <ForgotPasswordDialog
                     open={forgotPasswordOpen}
                     onOpenChange={setForgotPasswordOpen}
+                    onOtpSent={handlePasswordOtpSent}
+                />
+                <ResetPasswordDialog
+                    open={resetPasswordOpen}
+                    onOpenChange={setResetPasswordOpen}
+                    email={resetPasswordEmail}
+                    onResetSuccess={handleResetPasswordSuccess}
                 />
             </div>
         </div>

@@ -8,6 +8,9 @@ import type {
     GoogleAuthRequest,
     UserCreationRequest,
     OtpVerificationRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+    JWTPayload,
 } from '@/types/auth';
 import type { MessageResponse } from '@/types/user';
 
@@ -92,6 +95,52 @@ class AuthService {
             if (axios.isAxiosError(error) && error.response) {
                 const apiError = error.response.data as ApiErrorResponse;
                 throw new Error(apiError.message || 'Xác thực OTP thất bại');
+            }
+            throw new Error('Không thể kết nối đến server');
+        }
+    }
+
+    async forgotPassword(payload: ForgotPasswordRequest): Promise<MessageResponse> {
+        try {
+            const response = await axios.post<MessageResponse>(
+                `${API_BASE_URL}${API_ENDPOINTS.USER.FORGOT_PASSWORD}`,
+                payload,
+                {
+                    withCredentials: true,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response) {
+                const apiError = error.response.data as ApiErrorResponse;
+                throw new Error(apiError.message || 'Gửi OTP đặt lại mật khẩu thất bại');
+            }
+            throw new Error('Không thể kết nối đến server');
+        }
+    }
+
+    async resetPassword(payload: ResetPasswordRequest): Promise<MessageResponse> {
+        try {
+            const response = await axios.post<MessageResponse>(
+                `${API_BASE_URL}${API_ENDPOINTS.USER.RESET_PASSWORD}`,
+                payload,
+                {
+                    withCredentials: true,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error) && error.response) {
+                const apiError = error.response.data as ApiErrorResponse;
+                throw new Error(apiError.message || 'Đặt lại mật khẩu thất bại');
             }
             throw new Error('Không thể kết nối đến server');
         }
@@ -228,10 +277,10 @@ class AuthService {
      * Decode JWT token to get payload
      * Uses jwt-decode library for reliable and secure decoding
      */
-    decodeToken(token: string): any {
+    decodeToken(token: string): JWTPayload {
         try {
             return jwtDecode(token);
-        } catch (error) {
+        } catch {
             throw new Error('Invalid token format');
         }
     }
@@ -246,7 +295,7 @@ class AuthService {
                 return null;
             }
             return payload.exp * 1000;
-        } catch (error) {
+        } catch {
             return null;
         }
     }

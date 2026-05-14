@@ -29,3 +29,5 @@ AUTH_IMPLEMENTATION.md
 ENDPOINT.md
 API_WORKFLOW.md
 .env
+.env.development
+.env.production
