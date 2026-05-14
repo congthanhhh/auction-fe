@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from "react";
 import type { AuctionSessionResponse } from "@/types/auction";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,8 @@ import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
 import { auctionService } from "@/services/auctionService";
 import { bidService } from "@/services/bidService";
-import { auctionStatusLabels, auctionStatusVariants } from "@/types/auction-labels";
-import { Ban, CalendarClock, ChevronRight, Eye, Loader2, PackageSearch, Pencil, RotateCcw, Save } from "lucide-react";
+import { auctionStatusLabelKeys, auctionStatusVariants } from "@/types/auction-labels";
+import { Ban, CalendarClock, Eye, Loader2, PackageSearch, Pencil, RotateCcw, Save } from "lucide-react";
 
 interface MySessionsListProps {
     sessions: AuctionSessionResponse[];
@@ -60,6 +61,7 @@ function EditSessionDialog({
     disabled: boolean;
     onUpdated?: () => Promise<void> | void;
 }) {
+    const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -84,7 +86,7 @@ function EditSessionDialog({
             (parsedReservePrice != null && (!Number.isFinite(parsedReservePrice) || parsedReservePrice <= 0)) ||
             (parsedBuyNowPrice != null && (!Number.isFinite(parsedBuyNowPrice) || parsedBuyNowPrice <= 0))
         ) {
-            setError("Các mức giá phải lớn hơn 0.");
+            setError(t("auction.sessions.invalidPrices"));
             return;
         }
 
@@ -95,7 +97,7 @@ function EditSessionDialog({
                 !Number.isFinite(new Date(endTime).getTime()) ||
                 new Date(endTime) <= new Date(startTime))
         ) {
-            setError("Thời gian kết thúc phải sau thời gian bắt đầu.");
+            setError(t("auction.sessions.invalidTime"));
             return;
         }
 
@@ -114,7 +116,7 @@ function EditSessionDialog({
             const message =
                 err && typeof err === "object" && "message" in err
                     ? String((err as Error).message)
-                    : "Không thể lưu thay đổi phiên đấu giá";
+                    : t("auction.sessions.saveError");
             setError(message);
         } finally {
             setIsSaving(false);
@@ -126,25 +128,23 @@ function EditSessionDialog({
             <DialogTrigger asChild>
                 <Button variant="outline" size="sm" disabled={disabled}>
                     <Pencil className="size-4" />
-                    Chỉnh sửa
+                    {t("auction.sessions.edit")}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-2xl">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <DialogHeader>
-                        <DialogTitle>Chỉnh sửa phiên đấu giá</DialogTitle>
-                        <DialogDescription>
-                            Chỉ nên thay đổi phiên khi chưa có lượt bid để tránh ảnh hưởng người tham gia.
-                        </DialogDescription>
+                        <DialogTitle>{t("auction.sessions.editTitle")}</DialogTitle>
+                        <DialogDescription>{t("auction.sessions.editDescription")}</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Sản phẩm</Label>
+                            <Label className="text-xs text-muted-foreground">{t("auction.sessions.product")}</Label>
                             <p className="text-sm font-medium text-foreground">{session.product.name}</p>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2">
                             <div className="space-y-1.5">
-                                <Label htmlFor={`startTime-${session.id}`}>Thời gian bắt đầu</Label>
+                                <Label htmlFor={`startTime-${session.id}`}>{t("auction.sessions.startTime")}</Label>
                                 <Input
                                     id={`startTime-${session.id}`}
                                     name="startTime"
@@ -153,7 +153,7 @@ function EditSessionDialog({
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <Label htmlFor={`endTime-${session.id}`}>Thời gian kết thúc</Label>
+                                <Label htmlFor={`endTime-${session.id}`}>{t("auction.sessions.endTime")}</Label>
                                 <Input
                                     id={`endTime-${session.id}`}
                                     name="endTime"
@@ -164,15 +164,15 @@ function EditSessionDialog({
                         </div>
                         <div className="grid gap-3 sm:grid-cols-3">
                             <div className="space-y-1.5">
-                                <Label htmlFor={`startPrice-${session.id}`}>Giá khởi điểm</Label>
+                                <Label htmlFor={`startPrice-${session.id}`}>{t("auction.sessions.startPrice")}</Label>
                                 <Input id={`startPrice-${session.id}`} name="startPrice" type="number" min={1} defaultValue={session.startPrice} />
                             </div>
                             <div className="space-y-1.5">
-                                <Label htmlFor={`reservePrice-${session.id}`}>Giá chấp nhận bán</Label>
-                                <Input id={`reservePrice-${session.id}`} name="reservePrice" type="number" min={1} placeholder="Tùy chọn" />
+                                <Label htmlFor={`reservePrice-${session.id}`}>{t("auction.sessions.reservePrice")}</Label>
+                                <Input id={`reservePrice-${session.id}`} name="reservePrice" type="number" min={1} placeholder={t("common.optional")} />
                             </div>
                             <div className="space-y-1.5">
-                                <Label htmlFor={`buyNowPrice-${session.id}`}>Giá mua ngay</Label>
+                                <Label htmlFor={`buyNowPrice-${session.id}`}>{t("auction.sessions.buyNowPrice")}</Label>
                                 <Input id={`buyNowPrice-${session.id}`} name="buyNowPrice" type="number" min={1} defaultValue={session.buyNowPrice ?? ""} />
                             </div>
                         </div>
@@ -180,11 +180,11 @@ function EditSessionDialog({
                     {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
                     <DialogFooter>
                         <DialogClose asChild>
-                            <Button type="button" variant="outline">Hủy</Button>
+                            <Button type="button" variant="outline">{t("common.cancel")}</Button>
                         </DialogClose>
                         <Button type="submit" disabled={isSaving}>
                             {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-                            Lưu
+                            {t("common.save")}
                         </Button>
                     </DialogFooter>
                 </form>
@@ -195,7 +195,7 @@ function EditSessionDialog({
 
 export default function MySessionsList({ sessions, onToggleStatus, onSessionUpdated }: MySessionsListProps) {
     const navigate = useNavigate();
-
+    const { t } = useTranslation();
     const [bidCounts, setBidCounts] = useState<Record<number, number>>({});
     const [togglingId, setTogglingId] = useState<number | null>(null);
 
@@ -249,10 +249,16 @@ export default function MySessionsList({ sessions, onToggleStatus, onSessionUpda
     if (sessions.length === 0) {
         return (
             <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground shadow-sm dark:bg-gray-900">
-                Bạn chưa tạo phiên đấu giá nào phù hợp với bộ lọc hiện tại.
+                {t("auction.sessions.empty")}
             </div>
         );
     }
+
+    const renderStatusBadge = (session: AuctionSessionResponse) => (
+        <Badge variant="outline" className={`border text-xs font-medium ${auctionStatusVariants[session.status]}`}>
+            {t(auctionStatusLabelKeys[session.status])}
+        </Badge>
+    );
 
     return (
         <div className="space-y-3">
@@ -270,32 +276,29 @@ export default function MySessionsList({ sessions, onToggleStatus, onSessionUpda
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="min-w-0">
                                             <p className="truncate font-semibold text-foreground">{session.product.name}</p>
-                                            <p className="text-xs text-muted-foreground">Lượt bid: {bidCount}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {t("auction.sessions.bidCount", { count: bidCount })}
+                                            </p>
                                         </div>
-                                        <button type="button" onClick={() => navigate(`/auction/${session.id}`)} aria-label="Xem phiên">
-                                            <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" />
-                                        </button>
                                     </div>
-                                    <Badge variant="outline" className={`border text-xs font-medium ${auctionStatusVariants[session.status]}`}>
-                                        {auctionStatusLabels[session.status]}
-                                    </Badge>
+                                    {renderStatusBadge(session)}
                                 </div>
                             </div>
                             <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                                 <div>
-                                    <p className="text-xs text-muted-foreground">Giá khởi điểm</p>
+                                    <p className="text-xs text-muted-foreground">{t("auction.sessions.startPrice")}</p>
                                     <p className="font-medium">{formatCurrency(session.startPrice)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-muted-foreground">Giá hiện tại</p>
+                                    <p className="text-xs text-muted-foreground">{t("auction.sessions.currentPrice")}</p>
                                     <p className="font-semibold">{formatCurrency(session.currentPrice)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-muted-foreground">Mua ngay</p>
+                                    <p className="text-xs text-muted-foreground">{t("auction.sessions.buyNowPrice")}</p>
                                     <p className="font-medium">{session.buyNowPrice != null ? formatCurrency(session.buyNowPrice) : "--"}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-muted-foreground">Người thắng</p>
+                                    <p className="text-xs text-muted-foreground">{t("auction.sessions.winner")}</p>
                                     <p className="truncate font-medium">{session.highestBidder?.username ?? "--"}</p>
                                 </div>
                                 <div className="col-span-2 flex items-center gap-2 text-xs text-muted-foreground">
@@ -306,7 +309,7 @@ export default function MySessionsList({ sessions, onToggleStatus, onSessionUpda
                             <div className="mt-4 flex flex-wrap gap-2">
                                 <Button variant="ghost" size="sm" onClick={() => navigate(`/auction/${session.id}`)}>
                                     <Eye className="size-4" />
-                                    Xem
+                                    {t("common.view")}
                                 </Button>
                                 {bidCount === 0 && (
                                     <EditSessionDialog session={session} disabled={false} onUpdated={onSessionUpdated} />
@@ -320,7 +323,7 @@ export default function MySessionsList({ sessions, onToggleStatus, onSessionUpda
                                         ) : (
                                             <RotateCcw className="size-4" />
                                         )}
-                                        {isStopping ? "Dừng phiên" : "Kích hoạt lại"}
+                                        {isStopping ? t("auction.sessions.stopSession") : t("auction.sessions.reactivate")}
                                     </Button>
                                 )}
                             </div>
@@ -333,16 +336,16 @@ export default function MySessionsList({ sessions, onToggleStatus, onSessionUpda
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Mã phiên</TableHead>
-                            <TableHead>Sản phẩm</TableHead>
-                            <TableHead>Giá khởi điểm</TableHead>
-                            <TableHead>Giá hiện tại</TableHead>
-                            <TableHead>Mua ngay</TableHead>
-                            <TableHead>Người thắng</TableHead>
-                            <TableHead>Trạng thái</TableHead>
-                            <TableHead>Bắt đầu</TableHead>
-                            <TableHead>Kết thúc</TableHead>
-                            <TableHead className="text-right">Thao tác</TableHead>
+                            <TableHead>{t("auction.sessions.sessionCode")}</TableHead>
+                            <TableHead>{t("auction.sessions.product")}</TableHead>
+                            <TableHead>{t("auction.sessions.startPrice")}</TableHead>
+                            <TableHead>{t("auction.sessions.currentPrice")}</TableHead>
+                            <TableHead>{t("auction.sessions.buyNowPrice")}</TableHead>
+                            <TableHead>{t("auction.sessions.winner")}</TableHead>
+                            <TableHead>{t("auction.sessions.status")}</TableHead>
+                            <TableHead>{t("auction.sessions.start")}</TableHead>
+                            <TableHead>{t("auction.sessions.end")}</TableHead>
+                            <TableHead className="text-right">{t("auction.sessions.actions")}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -365,7 +368,9 @@ export default function MySessionsList({ sessions, onToggleStatus, onSessionUpda
                                                 >
                                                     {session.product.name}
                                                 </button>
-                                                <p className="text-xs text-muted-foreground">Lượt bid: {bidCount}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {t("auction.sessions.bidCount", { count: bidCount })}
+                                                </p>
                                             </div>
                                         </div>
                                     </TableCell>
@@ -375,18 +380,14 @@ export default function MySessionsList({ sessions, onToggleStatus, onSessionUpda
                                         {session.buyNowPrice != null ? formatCurrency(session.buyNowPrice) : "--"}
                                     </TableCell>
                                     <TableCell className="text-sm text-muted-foreground">{session.highestBidder?.username ?? "--"}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className={`border text-xs font-medium ${auctionStatusVariants[session.status]}`}>
-                                            {auctionStatusLabels[session.status]}
-                                        </Badge>
-                                    </TableCell>
+                                    <TableCell>{renderStatusBadge(session)}</TableCell>
                                     <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDateTime(session.startTime)}</TableCell>
                                     <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDateTime(session.endTime)}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-2">
                                             <Button variant="ghost" size="sm" onClick={() => navigate(`/auction/${session.id}`)}>
                                                 <Eye className="size-4" />
-                                                Xem
+                                                {t("common.view")}
                                             </Button>
                                             {bidCount === 0 && (
                                                 <EditSessionDialog session={session} disabled={false} onUpdated={onSessionUpdated} />
@@ -405,7 +406,7 @@ export default function MySessionsList({ sessions, onToggleStatus, onSessionUpda
                                                     ) : (
                                                         <RotateCcw className="size-4" />
                                                     )}
-                                                    {isStopping ? "Dừng" : "Mở lại"}
+                                                    {isStopping ? t("auction.sessions.stop") : t("auction.sessions.reopen")}
                                                 </Button>
                                             )}
                                         </div>

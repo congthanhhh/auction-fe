@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import InvoiceList from "@/components/invoice/InvoiceList";
 import { invoiceService } from "@/services/invoiceService";
 import type { InvoicePageResponse, InvoiceStatus, InvoiceType } from "@/types/invoice";
@@ -6,26 +7,25 @@ import { useRequireAuth } from "@/hooks/use-require-auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { SimplePagination } from "@/components/common/SimplePagination";
+import { invoiceStatusLabelKeys, invoiceTypeLabelKeys } from "@/types/invoice-labels";
 
-const statusFilterOptions: { value: "ALL" | InvoiceStatus; label: string }[] = [
-    { value: "ALL", label: "Tất cả trạng thái" },
-    { value: "PENDING", label: "Chờ thanh toán" },
-    { value: "PAID", label: "Đã thanh toán" },
-    { value: "SHIPPING", label: "Đang giao" },
-    { value: "COMPLETED", label: "Hoàn thành" },
-    { value: "DISPUTE", label: "Khiếu nại" },
-    { value: "CANCELLED_NON_PAYMENT", label: "Hủy (bùng hàng)" },
-    { value: "CANCELLED_BY_SELLER", label: "Hủy bởi người bán" },
-    { value: "REFUNDED", label: "Đã hoàn tiền" },
-];
+function getErrorMessage(error: unknown, fallback: string) {
+    if (error instanceof Error && error.message) {
+        return error.message;
+    }
 
-const typeFilterOptions: { value: "ALL" | InvoiceType; label: string }[] = [
-    { value: "ALL", label: "Tất cả loại" },
-    { value: "AUCTION_SALE", label: "Hóa đơn mua hàng" },
-    { value: "LISTING_FEE", label: "Phí giá sàn" },
-];
+    if (typeof error === "object" && error !== null && "message" in error) {
+        const message = (error as { message?: unknown }).message;
+        if (typeof message === "string" && message) {
+            return message;
+        }
+    }
+
+    return fallback;
+}
 
 export default function MyInvoices() {
+    const { t } = useTranslation();
     const requireAuth = useRequireAuth();
 
     const [pageData, setPageData] = useState<InvoicePageResponse | null>(null);
@@ -63,11 +63,7 @@ export default function MyInvoices() {
                 }
             } catch (err) {
                 if (!isMounted) return;
-                const message =
-                    err && typeof err === "object" && "message" in err
-                        ? String((err as any).message)
-                        : "Không thể tải danh sách hóa đơn";
-                setError(message);
+                setError(getErrorMessage(err, t("invoice.list.loadOrdersError")));
             } finally {
                 if (isMounted) {
                     setIsLoading(false);
@@ -80,7 +76,25 @@ export default function MyInvoices() {
         return () => {
             isMounted = false;
         };
-    }, [page, size, statusFilter, typeFilter]);
+    }, [page, size, statusFilter, typeFilter, t]);
+
+    const statusFilterOptions: { value: "ALL" | InvoiceStatus; label: string }[] = [
+        { value: "ALL", label: t("invoice.list.allStatuses") },
+        { value: "PENDING", label: t(invoiceStatusLabelKeys.PENDING) },
+        { value: "PAID", label: t(invoiceStatusLabelKeys.PAID) },
+        { value: "SHIPPING", label: t(invoiceStatusLabelKeys.SHIPPING) },
+        { value: "COMPLETED", label: t(invoiceStatusLabelKeys.COMPLETED) },
+        { value: "DISPUTE", label: t(invoiceStatusLabelKeys.DISPUTE) },
+        { value: "CANCELLED_NON_PAYMENT", label: t(invoiceStatusLabelKeys.CANCELLED_NON_PAYMENT) },
+        { value: "CANCELLED_BY_SELLER", label: t(invoiceStatusLabelKeys.CANCELLED_BY_SELLER) },
+        { value: "REFUNDED", label: t(invoiceStatusLabelKeys.REFUNDED) },
+    ];
+
+    const typeFilterOptions: { value: "ALL" | InvoiceType; label: string }[] = [
+        { value: "ALL", label: t("invoice.list.allTypes") },
+        { value: "AUCTION_SALE", label: t("invoice.list.buyingInvoice") },
+        { value: "LISTING_FEE", label: t(invoiceTypeLabelKeys.LISTING_FEE) },
+    ];
 
     const totalPages = pageData?.totalPages ?? 1;
 
@@ -93,20 +107,20 @@ export default function MyInvoices() {
             <div className="container mx-auto px-4 space-y-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <h1 className="text-2xl font-bold text-brand2 dark:text-white">
-                        Đơn hàng của tôi
+                        {t("invoice.list.myOrders")}
                     </h1>
                     <div className="flex flex-wrap gap-3 text-sm items-center">
                         <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-muted-foreground">Trạng thái</Label>
+                            <Label className="text-xs text-muted-foreground">{t("invoice.list.status")}</Label>
                             <Select
                                 value={statusFilter}
                                 onValueChange={(value) => {
-                                    setStatusFilter(value as any);
+                                    setStatusFilter(value as "ALL" | InvoiceStatus);
                                     setPage(1);
                                 }}
                             >
                                 <SelectTrigger size="sm" className="min-w-40">
-                                    <SelectValue placeholder="Lọc theo trạng thái" />
+                                    <SelectValue placeholder={t("invoice.list.filterStatus")} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {statusFilterOptions.map((opt) => (
@@ -118,16 +132,16 @@ export default function MyInvoices() {
                             </Select>
                         </div>
                         <div className="flex flex-col gap-1">
-                            <Label className="text-xs text-muted-foreground">Loại hóa đơn</Label>
+                            <Label className="text-xs text-muted-foreground">{t("invoice.list.type")}</Label>
                             <Select
                                 value={typeFilter}
                                 onValueChange={(value) => {
-                                    setTypeFilter(value as any);
+                                    setTypeFilter(value as "ALL" | InvoiceType);
                                     setPage(1);
                                 }}
                             >
                                 <SelectTrigger size="sm" className="min-w-40">
-                                    <SelectValue placeholder="Lọc theo loại" />
+                                    <SelectValue placeholder={t("invoice.list.filterType")} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {typeFilterOptions.map((opt) => (
@@ -142,7 +156,7 @@ export default function MyInvoices() {
                 </div>
 
                 {isLoading && (
-                    <p className="text-sm text-muted-foreground">Đang tải danh sách hóa đơn...</p>
+                    <p className="text-sm text-muted-foreground">{t("invoice.list.loadingOrders")}</p>
                 )}
                 {error && !isLoading && (
                     <p className="text-sm text-red-600">{error}</p>

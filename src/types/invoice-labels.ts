@@ -1,14 +1,14 @@
 import type { InvoiceStatus, InvoiceType } from "@/types/invoice";
 
-export const invoiceStatusLabels: Record<InvoiceStatus, string> = {
-    PENDING: "Chờ thanh toán",
-    PAID: "Đã thanh toán",
-    SHIPPING: "Đang giao hàng",
-    COMPLETED: "Hoàn thành",
-    DISPUTE: "Khiếu nại",
-    CANCELLED_NON_PAYMENT: "Hủy do không thanh toán",
-    CANCELLED_BY_SELLER: "Hủy bởi người bán",
-    REFUNDED: "Đã hoàn tiền",
+export const invoiceStatusLabelKeys: Record<InvoiceStatus, string> = {
+    PENDING: "invoice.status.PENDING",
+    PAID: "invoice.status.PAID",
+    SHIPPING: "invoice.status.SHIPPING",
+    COMPLETED: "invoice.status.COMPLETED",
+    DISPUTE: "invoice.status.DISPUTE",
+    CANCELLED_NON_PAYMENT: "invoice.status.CANCELLED_NON_PAYMENT",
+    CANCELLED_BY_SELLER: "invoice.status.CANCELLED_BY_SELLER",
+    REFUNDED: "invoice.status.REFUNDED",
 };
 
 export const invoiceStatusVariants: Record<InvoiceStatus, string> = {
@@ -22,7 +22,7 @@ export const invoiceStatusVariants: Record<InvoiceStatus, string> = {
     REFUNDED: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/40 dark:text-purple-200 dark:border-purple-800",
 };
 
-export const invoiceTypeLabels: Record<InvoiceType, string> = {
-    AUCTION_SALE: "Hóa đơn đấu giá",
-    LISTING_FEE: "Phí giá sàn",
+export const invoiceTypeLabelKeys: Record<InvoiceType, string> = {
+    AUCTION_SALE: "invoice.type.AUCTION_SALE",
+    LISTING_FEE: "invoice.type.LISTING_FEE",
 };

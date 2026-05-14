@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,14 +8,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProfileAddressSection from "@/components/profile/ProfileAddressSection";
 import { userService } from "@/services/userService";
 import type { UserProfileResponse } from "@/types/user";
+import { feedbackService } from "@/services/feedbackService";
+import { FeedbackRating, type FeedbackDto } from "@/types/feedback";
+import { SimplePagination } from "@/components/common/SimplePagination";
 import {
     AlertTriangle,
     CalendarDays,
     CheckCircle2,
+    Frown,
     KeyRound,
     Mail,
+    Meh,
+    MessageSquareText,
     Phone,
+    Receipt,
     ShieldCheck,
+    Smile,
+    Star,
     UserRound,
     XCircle,
 } from "lucide-react";
@@ -56,10 +66,40 @@ const getErrorMessage = (error: unknown, fallback: string) => {
     return fallback;
 };
 
+const feedbackRatingLabels: Record<FeedbackRating, string> = {
+    POSITIVE: "Tích cực",
+    NEUTRAL: "Trung lập",
+    NEGATIVE: "Tiêu cực",
+};
+
+const feedbackRatingClasses: Record<FeedbackRating, string> = {
+    POSITIVE: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300",
+    NEUTRAL: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300",
+    NEGATIVE: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300",
+};
+
+const feedbackRatingIcons: Record<FeedbackRating, typeof Smile> = {
+    POSITIVE: Smile,
+    NEUTRAL: Meh,
+    NEGATIVE: Frown,
+};
+
+const getReviewRoleLabel = (reviewAs?: string | null) => {
+    if (reviewAs === "BUYER") return "Mua";
+    if (reviewAs === "SELLER") return "Bán";
+    return "--";
+};
+
 const Profile = () => {
     const [profile, setProfile] = useState<UserProfileResponse | null>(null);
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
     const [profileError, setProfileError] = useState<string | null>(null);
+    const [feedbackList, setFeedbackList] = useState<FeedbackDto[]>([]);
+    const [feedbackPage, setFeedbackPage] = useState(1);
+    const [feedbackTotalPages, setFeedbackTotalPages] = useState(1);
+    const [feedbackTotalElements, setFeedbackTotalElements] = useState(0);
+    const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
+    const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -92,6 +132,56 @@ const Profile = () => {
         };
     }, []);
 
+    useEffect(() => {
+        setFeedbackPage(1);
+    }, [profile?.id]);
+
+    useEffect(() => {
+        const userId = profile?.id;
+
+        if (!userId) {
+            setFeedbackList([]);
+            setFeedbackTotalPages(1);
+            setFeedbackTotalElements(0);
+            setFeedbackError(null);
+            return;
+        }
+
+        let isMounted = true;
+
+        const fetchFeedback = async () => {
+            try {
+                setIsLoadingFeedback(true);
+                setFeedbackError(null);
+                const response = await feedbackService.getPublicFeedback(userId, feedbackPage, 10);
+
+                if (isMounted) {
+                    setFeedbackList(response.data ?? []);
+                    setFeedbackTotalPages(response.totalPages || 1);
+                    setFeedbackTotalElements(response.totalElements || 0);
+                }
+            } catch (error) {
+                console.error("Failed to load feedback:", error);
+                if (isMounted) {
+                    setFeedbackList([]);
+                    setFeedbackTotalPages(1);
+                    setFeedbackTotalElements(0);
+                    setFeedbackError(getErrorMessage(error, "Không tải được danh sách đánh giá."));
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoadingFeedback(false);
+                }
+            }
+        };
+
+        fetchFeedback();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [profile?.id, feedbackPage]);
+
     const fullName = useMemo(() => {
         if (!profile) return "Người dùng";
         return `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim() || profile.username;
@@ -100,6 +190,8 @@ const Profile = () => {
     const roles = profile?.roles?.map((role) => role.name).filter(Boolean) ?? [];
     const reputationScore = profile?.reputationScore ?? 0;
     const strikeCount = profile?.strikeCount ?? 0;
+    const buyerFeedbackCount = feedbackList.filter((feedback) => feedback.reviewAs === "BUYER").length;
+    const sellerFeedbackCount = feedbackList.filter((feedback) => feedback.reviewAs === "SELLER").length;
 
     return (
         <div className="min-h-screen bg-slate-50 py-8 dark:bg-gray-950">
@@ -115,7 +207,7 @@ const Profile = () => {
                             <div className="min-w-0 space-y-2">
                                 <div>
                                     <p className="text-sm text-muted-foreground">Hồ sơ cá nhân</p>
-                                    <h1 className="break-words text-2xl font-bold text-gray-950 dark:text-white sm:text-3xl">
+                                    <h1 className="wrap-break-word text-2xl font-bold text-gray-950 dark:text-white sm:text-3xl">
                                         {fullName}
                                     </h1>
                                 </div>
@@ -136,7 +228,7 @@ const Profile = () => {
                             </div>
                         </div>
 
-                        <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[430px]">
+                        <div className="grid gap-3 sm:grid-cols-3 lg:min-w-107.5">
                             <div className="rounded-md border bg-slate-50 p-4 dark:bg-gray-950">
                                 <p className="text-xs text-muted-foreground">Uy tín</p>
                                 <p className="mt-1 text-2xl font-bold text-foreground">{reputationScore}</p>
@@ -186,6 +278,7 @@ const Profile = () => {
                     <Tabs defaultValue="info" className="w-full">
                         <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-lg border bg-white p-1 dark:bg-gray-900 sm:w-fit">
                             <TabsTrigger value="info">Thông tin</TabsTrigger>
+                            <TabsTrigger value="feedback">Đánh giá</TabsTrigger>
                             <TabsTrigger value="addresses">Địa chỉ</TabsTrigger>
                         </TabsList>
 
@@ -203,7 +296,7 @@ const Profile = () => {
                                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                                 <div className="min-w-0">
                                                     <p className="text-sm text-muted-foreground">Tên hiển thị</p>
-                                                    <p className="break-words text-xl font-semibold text-foreground">{fullName}</p>
+                                                    <p className="wrap-break-word text-xl font-semibold text-foreground">{fullName}</p>
                                                 </div>
                                                 <Badge variant="secondary" className="w-fit gap-1">
                                                     <UserRound className="h-3 w-3" />
@@ -294,6 +387,83 @@ const Profile = () => {
                             </div>
                         </TabsContent>
 
+                        <TabsContent value="feedback" className="mt-4">
+                            <Card>
+                                <CardHeader className="gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                    <div>
+                                        <CardTitle className="text-lg">Feedback đã nhận</CardTitle>
+                                        <CardDescription>
+                                            Các đánh giá công khai bạn nhận được khi giao dịch với vai trò người mua hoặc người bán.
+                                        </CardDescription>
+                                    </div>
+                                    <Badge variant="outline" className="w-fit gap-1">
+                                        <MessageSquareText className="h-3.5 w-3.5" />
+                                        {feedbackTotalElements} feedback
+                                    </Badge>
+                                </CardHeader>
+                                <CardContent className="space-y-5">
+                                    <div className="grid gap-3 sm:grid-cols-3">
+                                        <div className="rounded-md border bg-slate-50 p-4 dark:bg-gray-950">
+                                            <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+                                                <Star className="h-4 w-4" />
+                                                Điểm uy tín
+                                            </div>
+                                            <p className="text-2xl font-bold text-foreground">{reputationScore}</p>
+                                        </div>
+                                        <div className="rounded-md border bg-slate-50 p-4 dark:bg-gray-950">
+                                            <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+                                                <UserRound className="h-4 w-4" />
+                                                Vai trò mua
+                                            </div>
+                                            <p className="text-2xl font-bold text-foreground">{buyerFeedbackCount}</p>
+                                            <p className="mt-1 text-xs text-muted-foreground">Trong trang hiện tại</p>
+                                        </div>
+                                        <div className="rounded-md border bg-slate-50 p-4 dark:bg-gray-950">
+                                            <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+                                                <ShieldCheck className="h-4 w-4" />
+                                                Vai trò bán
+                                            </div>
+                                            <p className="text-2xl font-bold text-foreground">{sellerFeedbackCount}</p>
+                                            <p className="mt-1 text-xs text-muted-foreground">Trong trang hiện tại</p>
+                                        </div>
+                                    </div>
+
+                                    {isLoadingFeedback ? (
+                                        <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
+                                            Đang tải feedback...
+                                        </div>
+                                    ) : feedbackError ? (
+                                        <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">
+                                            <AlertTriangle className="h-4 w-4" />
+                                            {feedbackError}
+                                        </div>
+                                    ) : feedbackList.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {feedbackList.map((feedback) => (
+                                                <FeedbackCard key={feedback.id} feedback={feedback} />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-md border border-dashed p-8 text-center">
+                                            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                                                <MessageSquareText className="h-6 w-6" />
+                                            </div>
+                                            <p className="font-semibold text-foreground">Chưa có feedback nào</p>
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                Feedback sẽ xuất hiện sau khi giao dịch hoàn tất và đối tác gửi đánh giá.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <SimplePagination
+                                        page={feedbackPage}
+                                        totalPages={feedbackTotalPages}
+                                        onPageChange={setFeedbackPage}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
                         <TabsContent value="addresses" className="mt-4">
                             <Card>
                                 <CardHeader>
@@ -320,6 +490,57 @@ interface InfoItemProps {
     value: string;
 }
 
+interface FeedbackCardProps {
+    feedback: FeedbackDto;
+}
+
+function FeedbackCard({ feedback }: FeedbackCardProps) {
+    const RatingIcon = feedbackRatingIcons[feedback.rating];
+    const reviewRoleLabel = getReviewRoleLabel(feedback.reviewAs);
+
+    return (
+        <div className="rounded-md border bg-white p-4 shadow-sm dark:bg-gray-900">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <p className="wrap-break-word text-sm font-semibold text-foreground">
+                            Từ @{feedback.fromUsername}
+                        </p>
+                        <Badge variant="outline" className="w-fit">
+                            {reviewRoleLabel}
+                        </Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        Gửi cho @{feedback.toUsername} · {formatDate(feedback.createdAt)}
+                    </p>
+                </div>
+
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <Badge variant="outline" className={`w-fit gap-1 ${feedbackRatingClasses[feedback.rating]}`}>
+                        <RatingIcon className="h-3.5 w-3.5" />
+                        {feedbackRatingLabels[feedback.rating]}
+                    </Badge>
+                    {feedback.invoiceId && (
+                        <Link
+                            to={`/my-invoices/${feedback.invoiceId}`}
+                            className="inline-flex h-8 items-center gap-1 rounded-md border px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                        >
+                            <Receipt className="h-3.5 w-3.5" />
+                            Xem đơn hàng
+                        </Link>
+                    )}
+                </div>
+            </div>
+
+            <div className="mt-4 rounded-md bg-slate-50 p-3 dark:bg-gray-950">
+                <p className="whitespace-pre-line wrap-break-word text-sm leading-6 text-muted-foreground">
+                    {feedback.comment || "Người đánh giá không để lại nhận xét."}
+                </p>
+            </div>
+        </div>
+    );
+}
+
 function InfoItem({ icon: Icon, label, value }: InfoItemProps) {
     return (
         <div className="rounded-md border bg-slate-50 p-4 dark:bg-gray-950">
@@ -327,7 +548,7 @@ function InfoItem({ icon: Icon, label, value }: InfoItemProps) {
                 <Icon className="h-4 w-4" />
                 <span>{label}</span>
             </div>
-            <p className="break-words text-sm font-semibold text-foreground">{value || "--"}</p>
+            <p className="wrap-break-word text-sm font-semibold text-foreground">{value || "--"}</p>
         </div>
     );
 }

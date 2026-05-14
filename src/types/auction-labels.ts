@@ -1,12 +1,12 @@
 import type { AuctionStatus, ProductStatus } from "@/types/auction";
 
-export const auctionStatusLabels: Record<AuctionStatus, string> = {
-    SCHEDULED: "Chưa bắt đầu",
-    ACTIVE: "Đang diễn ra",
-    ENDED: "Đã kết thúc",
-    CANCELLED: "Đã hủy",
-    FAILED: "Không thành công",
-    WAITING_PAYMENT: "Chờ thanh toán",
+export const auctionStatusLabelKeys: Record<AuctionStatus, string> = {
+    SCHEDULED: "auction.status.SCHEDULED",
+    ACTIVE: "auction.status.ACTIVE",
+    ENDED: "auction.status.ENDED",
+    CANCELLED: "auction.status.CANCELLED",
+    FAILED: "auction.status.FAILED",
+    WAITING_PAYMENT: "auction.status.WAITING_PAYMENT",
 };
 
 export const auctionStatusVariants: Record<AuctionStatus, string> = {
@@ -18,9 +18,9 @@ export const auctionStatusVariants: Record<AuctionStatus, string> = {
     WAITING_PAYMENT: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800",
 };
 
-export const productStatusLabels: Record<ProductStatus, string> = {
-    WAITING_FOR_APPROVAL: "Chờ duyệt",
-    ACTIVE: "Đã duyệt",
-    REJECTED: "Bị từ chối",
-    BANNED: "Bị khóa",
+export const productStatusLabelKeys: Record<ProductStatus, string> = {
+    WAITING_FOR_APPROVAL: "auction.productStatus.WAITING_FOR_APPROVAL",
+    ACTIVE: "auction.productStatus.ACTIVE",
+    REJECTED: "auction.productStatus.REJECTED",
+    BANNED: "auction.productStatus.BANNED",
 };

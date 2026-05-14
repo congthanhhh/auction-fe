@@ -1,11 +1,12 @@
 import type { InvoiceResponse } from "@/types/invoice";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
-import { invoiceStatusLabels, invoiceStatusVariants, invoiceTypeLabels } from "@/types/invoice-labels";
+import { invoiceStatusLabelKeys, invoiceStatusVariants, invoiceTypeLabelKeys } from "@/types/invoice-labels";
 import { ChevronRight, PackageSearch, Receipt, Truck } from "lucide-react";
 
 interface InvoiceListProps {
@@ -37,6 +38,7 @@ function InvoiceImage({ invoice }: { invoice: InvoiceResponse }) {
 
 export default function InvoiceList({ invoices, isSeller }: InvoiceListProps) {
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const openInvoice = (invoice: InvoiceResponse) => {
         navigate(`/my-invoices/${invoice.id}`, {
@@ -47,9 +49,7 @@ export default function InvoiceList({ invoices, isSeller }: InvoiceListProps) {
     if (invoices.length === 0) {
         return (
             <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground shadow-sm dark:bg-gray-900">
-                {isSeller
-                    ? "Bạn chưa có đơn bán nào phù hợp với bộ lọc hiện tại."
-                    : "Hiện bạn chưa có hóa đơn nào. Khi thắng phiên đấu giá, hóa đơn sẽ xuất hiện tại đây."}
+                {isSeller ? t("invoice.list.emptySeller") : t("invoice.list.emptyBuyer")}
             </div>
         );
     }
@@ -72,8 +72,8 @@ export default function InvoiceList({ invoices, isSeller }: InvoiceListProps) {
                                         <p className="truncate font-semibold text-foreground">{invoice.product.name}</p>
                                         <p className="text-xs text-muted-foreground">
                                             {isSeller
-                                                ? `Người mua: ${invoice.user.username}`
-                                                : `Người bán: ${invoice.product.seller.username}`}
+                                                ? t("invoice.list.buyer", { name: invoice.user.username })
+                                                : t("invoice.list.seller", { name: invoice.product.seller.username })}
                                         </p>
                                     </div>
                                     <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" />
@@ -83,29 +83,29 @@ export default function InvoiceList({ invoices, isSeller }: InvoiceListProps) {
                                         variant="outline"
                                         className={`border text-xs font-medium ${invoiceStatusVariants[invoice.status]}`}
                                     >
-                                        {invoiceStatusLabels[invoice.status]}
+                                        {t(invoiceStatusLabelKeys[invoice.status])}
                                     </Badge>
                                     <Badge variant="secondary" className="text-xs">
-                                        {invoiceTypeLabels[invoice.type]}
+                                        {t(invoiceTypeLabelKeys[invoice.type])}
                                     </Badge>
                                 </div>
                             </div>
                         </div>
                         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                             <div>
-                                <p className="text-xs text-muted-foreground">Giá cuối</p>
+                                <p className="text-xs text-muted-foreground">{t("invoice.list.finalPrice")}</p>
                                 <p className="font-semibold">{formatCurrency(invoice.finalPrice)}</p>
                             </div>
                             <div>
-                                <p className="text-xs text-muted-foreground">Hạn thanh toán</p>
+                                <p className="text-xs text-muted-foreground">{t("invoice.list.dueDate")}</p>
                                 <p className="font-medium">{formatDateTime(invoice.dueDate)}</p>
                             </div>
                             <div className="col-span-2 flex items-center gap-2 text-xs text-muted-foreground">
                                 {invoice.trackingCode ? <Truck className="size-4" /> : <Receipt className="size-4" />}
                                 <span>
                                     {invoice.trackingCode
-                                        ? `${invoice.carrier ?? "Đơn vị vận chuyển"}: ${invoice.trackingCode}`
-                                        : `Tạo lúc ${formatDateTime(invoice.createdAt)}`}
+                                        ? `${invoice.carrier ?? t("invoice.list.carrier")}: ${invoice.trackingCode}`
+                                        : t("invoice.list.createdAt", { date: formatDateTime(invoice.createdAt) })}
                                 </span>
                             </div>
                         </div>
@@ -117,15 +117,15 @@ export default function InvoiceList({ invoices, isSeller }: InvoiceListProps) {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Mã HĐ</TableHead>
-                            <TableHead>Sản phẩm</TableHead>
-                            <TableHead>Giá cuối</TableHead>
-                            <TableHead>Trạng thái</TableHead>
-                            <TableHead>Loại</TableHead>
-                            <TableHead>Ngày tạo</TableHead>
-                            <TableHead>Hạn thanh toán</TableHead>
-                            <TableHead>Vận chuyển</TableHead>
-                            <TableHead className="text-right">Thao tác</TableHead>
+                            <TableHead>{t("invoice.list.code")}</TableHead>
+                            <TableHead>{t("invoice.list.product")}</TableHead>
+                            <TableHead>{t("invoice.list.finalPrice")}</TableHead>
+                            <TableHead>{t("invoice.list.status")}</TableHead>
+                            <TableHead>{t("invoice.list.type")}</TableHead>
+                            <TableHead>{t("invoice.list.createdDate")}</TableHead>
+                            <TableHead>{t("invoice.list.dueDate")}</TableHead>
+                            <TableHead>{t("invoice.list.shipping")}</TableHead>
+                            <TableHead className="text-right">{t("invoice.list.actions")}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -141,8 +141,8 @@ export default function InvoiceList({ invoices, isSeller }: InvoiceListProps) {
                                             </p>
                                             <p className="text-xs text-muted-foreground">
                                                 {isSeller
-                                                    ? `Người mua: ${invoice.user.username}`
-                                                    : `Người bán: ${invoice.product.seller.username}`}
+                                                    ? t("invoice.list.buyer", { name: invoice.user.username })
+                                                    : t("invoice.list.seller", { name: invoice.product.seller.username })}
                                             </p>
                                         </div>
                                     </div>
@@ -153,11 +153,11 @@ export default function InvoiceList({ invoices, isSeller }: InvoiceListProps) {
                                         variant="outline"
                                         className={`border text-xs font-medium ${invoiceStatusVariants[invoice.status]}`}
                                     >
-                                        {invoiceStatusLabels[invoice.status]}
+                                        {t(invoiceStatusLabelKeys[invoice.status])}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="text-xs text-muted-foreground">
-                                    {invoiceTypeLabels[invoice.type]}
+                                    {t(invoiceTypeLabelKeys[invoice.type])}
                                 </TableCell>
                                 <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                                     {formatDateTime(invoice.createdAt)}
@@ -170,7 +170,7 @@ export default function InvoiceList({ invoices, isSeller }: InvoiceListProps) {
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Button variant="ghost" size="sm" onClick={() => openInvoice(invoice)}>
-                                        Xem
+                                        {t("common.view")}
                                     </Button>
                                 </TableCell>
                             </TableRow>

@@ -6,6 +6,7 @@ import { Separator } from '../ui/separator';
 import { formatCurrency } from '@/lib/utils';
 import { bidService } from '@/services/bidService';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 // use skeleton for loading state
 
 interface AuctionCardProps {
@@ -31,6 +32,7 @@ export default function AuctionCard({
     buyNowPrice,
     productId,
 }: AuctionCardProps) {
+    const { t } = useTranslation();
     const [actualBids, setActualBids] = useState<number>(bids);
 
     useEffect(() => {
@@ -39,7 +41,7 @@ export default function AuctionCard({
             try {
                 const count = await bidService.getBidCount(productId);
                 setActualBids(count);
-            } catch (error) {
+            } catch {
                 // Ignore error, fallback to default bids prop
             }
         };
@@ -74,7 +76,7 @@ export default function AuctionCard({
                     </p>
                 </div>
                 <div className="flex items-center h-5 text-sm text-gray-600 dark:text-gray-400 gap-2">
-                    <span>Bids: {actualBids}</span>
+                    <span>{t('auction.card.bids', { count: actualBids })}</span>
                     <Separator orientation="vertical" />
                     <span className="flex items-center">
                         <Clock className="h-3 w-3" />
@@ -85,7 +87,7 @@ export default function AuctionCard({
                         <Button className='text-brand hover:text-brand-hover px-0'
                             size="sm" variant="ghost"
                         >
-                            Quick bid
+                            {t('auction.card.quickBid')}
                         </Button>
                     </Link>
                     {isBuyNow && buyNowPrice && (
@@ -97,7 +99,7 @@ export default function AuctionCard({
                                     size="sm"
                                     variant="ghost"
                                 >
-                                    Buy now
+                                    {t('auction.card.buyNow')}
                                 </Button>
                             </Link>
                         </>

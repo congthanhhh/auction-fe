@@ -1,11 +1,12 @@
 import type { AuctionSessionResponse } from "@/types/auction";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
-import { auctionStatusLabels, auctionStatusVariants } from "@/types/auction-labels";
+import { auctionStatusLabelKeys, auctionStatusVariants } from "@/types/auction-labels";
 import { CalendarClock, ChevronRight, PackageSearch } from "lucide-react";
 
 interface MyJoinedListProps {
@@ -36,11 +37,12 @@ function SessionImage({ session }: { session: AuctionSessionResponse }) {
 
 export default function MyJoinedList({ sessions }: MyJoinedListProps) {
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     if (sessions.length === 0) {
         return (
             <div className="rounded-lg border bg-white p-6 text-sm text-muted-foreground shadow-sm dark:bg-gray-900">
-                Bạn chưa tham gia phiên đấu giá nào. Khi đặt giá trong một phiên, phiên đó sẽ xuất hiện tại đây.
+                {t("auction.joined.empty")}
             </div>
         );
     }
@@ -61,7 +63,9 @@ export default function MyJoinedList({ sessions }: MyJoinedListProps) {
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0">
                                         <p className="truncate font-semibold text-foreground">{session.product.name}</p>
-                                        <p className="text-xs text-muted-foreground">Người bán: {session.product.seller.username}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {t("invoice.list.seller", { name: session.product.seller.username })}
+                                        </p>
                                     </div>
                                     <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" />
                                 </div>
@@ -69,17 +73,17 @@ export default function MyJoinedList({ sessions }: MyJoinedListProps) {
                                     variant="outline"
                                     className={`border text-xs font-medium ${auctionStatusVariants[session.status]}`}
                                 >
-                                    {auctionStatusLabels[session.status]}
+                                    {t(auctionStatusLabelKeys[session.status])}
                                 </Badge>
                             </div>
                         </div>
                         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                             <div>
-                                <p className="text-xs text-muted-foreground">Giá hiện tại</p>
+                                <p className="text-xs text-muted-foreground">{t("auction.sessions.currentPrice")}</p>
                                 <p className="font-semibold">{formatCurrency(session.currentPrice)}</p>
                             </div>
                             <div>
-                                <p className="text-xs text-muted-foreground">Giá tối đa của tôi</p>
+                                <p className="text-xs text-muted-foreground">{t("auction.joined.maxBid")}</p>
                                 <p className="font-semibold">
                                     {session.myMaxBid != null ? formatCurrency(session.myMaxBid) : "--"}
                                 </p>
@@ -97,14 +101,14 @@ export default function MyJoinedList({ sessions }: MyJoinedListProps) {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Mã phiên</TableHead>
-                            <TableHead>Sản phẩm</TableHead>
-                            <TableHead>Giá hiện tại</TableHead>
-                            <TableHead>Giá tối đa của tôi</TableHead>
-                            <TableHead>Trạng thái</TableHead>
-                            <TableHead>Bắt đầu</TableHead>
-                            <TableHead>Kết thúc</TableHead>
-                            <TableHead className="text-right">Thao tác</TableHead>
+                            <TableHead>{t("auction.sessions.sessionCode")}</TableHead>
+                            <TableHead>{t("auction.sessions.product")}</TableHead>
+                            <TableHead>{t("auction.sessions.currentPrice")}</TableHead>
+                            <TableHead>{t("auction.joined.maxBid")}</TableHead>
+                            <TableHead>{t("auction.sessions.status")}</TableHead>
+                            <TableHead>{t("auction.sessions.start")}</TableHead>
+                            <TableHead>{t("auction.sessions.end")}</TableHead>
+                            <TableHead className="text-right">{t("auction.sessions.actions")}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -119,7 +123,7 @@ export default function MyJoinedList({ sessions }: MyJoinedListProps) {
                                                 {session.product.name}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
-                                                Người bán: {session.product.seller.username}
+                                                {t("invoice.list.seller", { name: session.product.seller.username })}
                                             </p>
                                         </div>
                                     </div>
@@ -133,7 +137,7 @@ export default function MyJoinedList({ sessions }: MyJoinedListProps) {
                                         variant="outline"
                                         className={`border text-xs font-medium ${auctionStatusVariants[session.status]}`}
                                     >
-                                        {auctionStatusLabels[session.status]}
+                                        {t(auctionStatusLabelKeys[session.status])}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
@@ -144,7 +148,7 @@ export default function MyJoinedList({ sessions }: MyJoinedListProps) {
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Button variant="ghost" size="sm" onClick={() => navigate(`/auction/${session.id}`)}>
-                                        Xem
+                                        {t("common.view")}
                                     </Button>
                                 </TableCell>
                             </TableRow>

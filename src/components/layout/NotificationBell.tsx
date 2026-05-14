@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Bell, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Popover,
@@ -13,9 +14,56 @@ import type { NotificationResponse } from '@/types/notification';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuthStore } from '@/stores/authStore';
 
+const normalizeNotificationLink = (link?: string | null): string | null => {
+    const trimmedLink = link?.trim();
+
+    if (!trimmedLink) {
+        return null;
+    }
+
+    if (/^https?:\/\//i.test(trimmedLink)) {
+        try {
+            const url = new URL(trimmedLink);
+            if (url.origin !== window.location.origin) {
+                return null;
+            }
+            return normalizeNotificationLink(`${url.pathname}${url.search}${url.hash}`);
+        } catch {
+            return null;
+        }
+    }
+
+    const internalLink = trimmedLink.startsWith('/') ? trimmedLink : `/${trimmedLink}`;
+
+    const invoiceMatch = internalLink.match(/^\/invoices?\/(\d+)(.*)?$/);
+    if (invoiceMatch) {
+        return `/my-invoices/${invoiceMatch[1]}${invoiceMatch[2] ?? ''}`;
+    }
+
+    const auctionMatch = internalLink.match(/^\/auctions\/(\d+)(.*)?$/);
+    if (auctionMatch) {
+        return `/auction/${auctionMatch[1]}${auctionMatch[2] ?? ''}`;
+    }
+
+    if (
+        internalLink === '/profile' ||
+        internalLink === '/my-invoices' ||
+        internalLink === '/my-sales' ||
+        internalLink === '/my-joined' ||
+        internalLink === '/my-sessions' ||
+        internalLink.startsWith('/auction/') ||
+        internalLink.startsWith('/my-invoices/')
+    ) {
+        return internalLink;
+    }
+
+    return null;
+};
+
 export function NotificationBell() {
     const { unreadCount, fetchUnreadCount, decrementUnreadCount } = useNotificationStore();
     const { isAuthenticated } = useAuthStore();
+    const navigate = useNavigate();
     const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
@@ -48,24 +96,32 @@ export function NotificationBell() {
         }
     }, [isOpen, isAuthenticated]);
 
-    const handleMarkAsRead = async (notification: NotificationResponse) => {
-        if (notification.isRead) return;
+    const handleNotificationClick = async (notification: NotificationResponse) => {
+        const targetLink = normalizeNotificationLink(notification.link);
+        const wasUnread = !notification.isRead;
 
         try {
-            // Optimistic update
-            setNotifications(prev =>
-                prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n)
-            );
-            decrementUnreadCount();
+            if (wasUnread) {
+                setNotifications(prev =>
+                    prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n)
+                );
+                decrementUnreadCount();
 
-            // Call API
-            await notificationService.markAsRead(notification.id);
+                await notificationService.markAsRead(notification.id);
+            }
+
+            if (targetLink) {
+                setIsOpen(false);
+                navigate(targetLink);
+            }
         } catch (error) {
             console.error('Failed to mark notification as read:', error);
-            // Revert on error (optional)
-            setNotifications(prev =>
-                prev.map(n => n.id === notification.id ? { ...n, isRead: false } : n)
-            );
+            if (wasUnread) {
+                setNotifications(prev =>
+                    prev.map(n => n.id === notification.id ? { ...n, isRead: false } : n)
+                );
+                fetchUnreadCount();
+            }
         }
     };
 
@@ -94,27 +150,42 @@ export function NotificationBell() {
                         </div>
                     ) : notifications.length > 0 ? (
                         <div className="flex flex-col">
-                            {notifications.map((notification) => (
-                                <div
-                                    key={notification.id}
-                                    onClick={() => handleMarkAsRead(notification)}
-                                    className={`p-4 border-b last:border-b-0 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${!notification.isRead ? 'bg-brand/5 dark:bg-brand/10' : ''}`}
-                                >
-                                    <div className="flex gap-3">
-                                        <div className="flex-1 space-y-1">
-                                            <p className={`text-sm ${!notification.isRead ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-300'}`}>
-                                                {notification.message}
-                                            </p>
-                                            <p className="text-xs text-gray-400">
-                                                {notification.createdAt ? formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true }) : ''}
-                                            </p>
+                            {notifications.map((notification) => {
+                                const targetLink = normalizeNotificationLink(notification.link);
+
+                                return (
+                                    <button
+                                        key={notification.id}
+                                        type="button"
+                                        onClick={() => handleNotificationClick(notification)}
+                                        className={`w-full border-b p-4 text-left transition-colors last:border-b-0 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand dark:hover:bg-gray-800 ${!notification.isRead ? 'bg-brand/5 dark:bg-brand/10' : ''}`}
+                                    >
+                                        <div className="flex gap-3">
+                                            <div className="flex-1 space-y-1">
+                                                <p className={`text-sm ${!notification.isRead ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-300'}`}>
+                                                    {notification.message}
+                                                </p>
+                                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-400">
+                                                    <span>
+                                                        {notification.createdAt ? formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true }) : ''}
+                                                    </span>
+                                                    {!targetLink && notification.link && (
+                                                        <span className="text-muted-foreground">Không có trang phù hợp</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                {!notification.isRead && (
+                                                    <span className="mt-1.5 flex h-2 w-2 rounded-full bg-brand" />
+                                                )}
+                                                {targetLink && (
+                                                    <ChevronRight className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                                                )}
+                                            </div>
                                         </div>
-                                        {!notification.isRead && (
-                                            <div className="flex h-2 w-2 rounded-full bg-brand mt-1.5" />
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
+                                    </button>
+                                );
+                            })}
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-32 text-gray-500">

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
     Dialog,
     DialogContent,
@@ -26,6 +27,7 @@ export function ResetPasswordDialog({
     email,
     onResetSuccess,
 }: ResetPasswordDialogProps) {
+    const { t } = useTranslation()
     const [otp, setOtp] = useState("")
     const [newPassword, setNewPassword] = useState("")
     const [showPassword, setShowPassword] = useState(false)
@@ -48,17 +50,17 @@ export function ResetPasswordDialog({
 
         const trimmedOtp = otp.trim()
         if (!email.trim()) {
-            setError("Email đặt lại mật khẩu không hợp lệ")
+            setError(t("auth.resetPassword.invalidEmail"))
             return
         }
 
         if (!trimmedOtp) {
-            setError("Vui lòng nhập mã OTP")
+            setError(t("auth.resetPassword.otpRequired"))
             return
         }
 
         if (newPassword.length < 8) {
-            setError("Mật khẩu phải có ít nhất 8 ký tự")
+            setError(t("auth.resetPassword.minLength"))
             return
         }
 
@@ -69,14 +71,14 @@ export function ResetPasswordDialog({
                 otp: trimmedOtp,
                 newPassword,
             })
-            setInfoMessage(response.message || "Đặt lại mật khẩu thành công")
+            setInfoMessage(response.message || t("auth.resetPassword.resetSuccess"))
             setTimeout(() => {
                 clearForm()
                 onOpenChange(false)
                 onResetSuccess?.()
             }, 500)
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Đặt lại mật khẩu thất bại"
+            const message = err instanceof Error ? err.message : t("auth.resetPassword.error")
             setError(message)
         } finally {
             setIsSubmitting(false)
@@ -101,9 +103,9 @@ export function ResetPasswordDialog({
         >
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle className="text-brand2">Đặt lại mật khẩu</DialogTitle>
+                    <DialogTitle className="text-brand2">{t("auth.resetPassword.title")}</DialogTitle>
                     <DialogDescription>
-                        Nhập mã OTP đã gửi đến <span className="font-medium">{email}</span> và mật khẩu mới của bạn
+                        {t("auth.resetPassword.descriptionWithEmail", { email })}
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit}>
@@ -119,13 +121,13 @@ export function ResetPasswordDialog({
                         )}
                         <div className="space-y-2">
                             <Label htmlFor="reset-otp" className="text-brand2">
-                                Mã OTP <span className="text-red-500">*</span>
+                                {t("auth.resetPassword.otp")} <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="reset-otp"
                                 type="text"
                                 inputMode="numeric"
-                                placeholder="Nhập mã 6 số"
+                                placeholder={t("auth.otp.placeholder")}
                                 value={otp}
                                 onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ""))}
                                 maxLength={6}
@@ -133,12 +135,12 @@ export function ResetPasswordDialog({
                                 required
                             />
                             <p className="text-xs text-gray-500">
-                                Nhập mã OTP đã được gửi đến email của bạn
+                                {t("auth.resetPassword.otpHint")}
                             </p>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="newPassword" className="text-brand2">
-                                Mật khẩu mới <span className="text-red-500">*</span>
+                                {t("auth.resetPassword.newPassword")} <span className="text-red-500">*</span>
                             </Label>
                             <div className="relative">
                                 <Input
@@ -167,7 +169,7 @@ export function ResetPasswordDialog({
                                 </Button>
                             </div>
                             <p className="text-xs text-gray-500">
-                                Mật khẩu phải có ít nhất 8 ký tự
+                                {t("auth.resetPassword.minLength")}
                             </p>
                         </div>
                     </div>
@@ -178,11 +180,11 @@ export function ResetPasswordDialog({
                             onClick={handleClose}
                             disabled={isSubmitting}
                         >
-                            Hủy
+                            {t("auth.resetPassword.cancel")}
                         </Button>
                         <Button type="submit" className="bg-brand hover:bg-brand-hover" disabled={isSubmitting}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {isSubmitting ? "Đang đặt lại..." : "Đặt lại mật khẩu"}
+                            {isSubmitting ? t("auth.resetPassword.submitting") : t("auth.resetPassword.submit")}
                         </Button>
                     </DialogFooter>
                 </form>

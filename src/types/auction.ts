@@ -134,7 +134,7 @@ export interface BidRequest {
 export interface BidResponse {
     id: number;
     displayedAmount: number;
-    bidTime: string; // LocalDateTime
+    bidTime: string | number[]; // LocalDateTime from REST or Socket.IO payload
     user: SimpleUserResponse;
     auctionSessionId: number;
 }

@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,8 +11,10 @@ import { useAuthStore } from "@/stores/authStore"
 import { OTPDialog } from "@/components/auth"
 import { authService } from "@/services/authService"
 import type { UserCreationRequest } from "@/types/auth"
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher"
 
 export const SignUp = () => {
+    const { t } = useTranslation()
     const navigate = useNavigate()
     const { redirectToGoogleLogin } = useAuthStore()
     const [username, setUsername] = useState("")
@@ -45,10 +48,10 @@ export const SignUp = () => {
             setIsSubmitting(true)
             const response = await authService.createUserOtp(payload)
             setLastSignUpPayload(payload)
-            setInfoMessage(response.message || "Đã gửi mã OTP tới email của bạn")
+            setInfoMessage(response.message || t("auth.signUp.otpSent"))
             setOtpDialogOpen(true)
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Đăng ký tài khoản thất bại"
+            const message = err instanceof Error ? err.message : t("auth.signUp.error")
             setError(message)
         } finally {
             setIsSubmitting(false)
@@ -62,7 +65,7 @@ export const SignUp = () => {
     const handleResendOtp = async () => {
         if (!lastSignUpPayload) return
         const response = await authService.createUserOtp(lastSignUpPayload)
-        setInfoMessage(response.message || "Đã gửi lại mã OTP tới email của bạn")
+        setInfoMessage(response.message || t("auth.signUp.otpResent"))
     }
 
     return (
@@ -70,9 +73,12 @@ export const SignUp = () => {
             {/* Header */}
             <div className="border-b-4 border-brand2 bg-white dark:bg-gray-900 shadow-sm">
                 <div className="container mx-auto px-4 py-5">
-                    <Link to="/" className="text-4xl font-bold text-brand2 dark:text-brand whitespace-nowrap hover:text-brand transition-colors">
-                        Auction Shop Online
-                    </Link>
+                    <div className="flex items-center justify-between gap-4">
+                        <Link to="/" className="text-4xl font-bold text-brand2 dark:text-brand whitespace-nowrap hover:text-brand transition-colors">
+                            {t("common.appNameLong")}
+                        </Link>
+                        <LanguageSwitcher />
+                    </div>
                 </div>
             </div>
 
@@ -80,9 +86,9 @@ export const SignUp = () => {
             <div className="flex-1 flex items-center justify-center p-4 py-8">
                 <Card className="w-full max-w-2xl">
                     <CardHeader className="space-y-1">
-                        <CardTitle className="text-2xl font-bold text-center text-brand2">Đăng ký tài khoản</CardTitle>
+                        <CardTitle className="text-2xl font-bold text-center text-brand2">{t("auth.signUp.title")}</CardTitle>
                         <CardDescription className="text-center">
-                            Điền thông tin để tạo tài khoản mới
+                            {t("auth.signUp.description")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -95,7 +101,7 @@ export const SignUp = () => {
                             )}
                             {/* Username */}
                             <div className="space-y-2">
-                                <Label htmlFor="username">Tên đăng nhập <span className="text-red-500">*</span></Label>
+                                <Label htmlFor="username">{t("auth.signUp.username")} <span className="text-red-500">*</span></Label>
                                 <Input
                                     id="username"
                                     type="text"
@@ -109,18 +115,18 @@ export const SignUp = () => {
                             {/* First Name and Last Name */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="firstName">Họ <span className="text-red-500">*</span></Label>
+                                    <Label htmlFor="firstName">{t("auth.signUp.firstName")} <span className="text-red-500">*</span></Label>
                                     <Input
                                         id="firstName"
                                         type="text"
-                                        placeholder="Nguyễn Văn"
+                                        placeholder={t("auth.signUp.firstNamePlaceholder")}
                                         value={firstName}
                                         onChange={(e) => setFirstName(e.target.value)}
                                         required
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="lastName">Tên <span className="text-red-500">*</span></Label>
+                                    <Label htmlFor="lastName">{t("auth.signUp.lastName")} <span className="text-red-500">*</span></Label>
                                     <Input
                                         id="lastName"
                                         type="text"
@@ -134,7 +140,7 @@ export const SignUp = () => {
 
                             {/* Phone */}
                             <div className="space-y-2">
-                                <Label htmlFor="phone">Số điện thoại <span className="text-red-500">*</span></Label>
+                                <Label htmlFor="phone">{t("auth.signUp.phone")} <span className="text-red-500">*</span></Label>
                                 <Input
                                     id="phone"
                                     type="tel"
@@ -160,7 +166,7 @@ export const SignUp = () => {
 
                             {/* Password */}
                             <div className="space-y-2">
-                                <Label htmlFor="password">Mật khẩu <span className="text-red-500">*</span></Label>
+                                <Label htmlFor="password">{t("auth.signUp.password")} <span className="text-red-500">*</span></Label>
                                 <div className="relative">
                                     <Input
                                         id="password"
@@ -191,14 +197,14 @@ export const SignUp = () => {
                                 className="w-full bg-brand hover:bg-brand-hover"
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? "Đang đăng ký..." : "Đăng ký"}
+                                {isSubmitting ? t("auth.signUp.submitting") : t("auth.signUp.submit")}
                             </Button>
                         </form>
 
                         <div className="relative my-6">
                             <Separator />
                             <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-950 px-2 text-xs text-gray-500">
-                                HOẶC
+                                {t("auth.signIn.divider")}
                             </span>
                         </div>
 
@@ -227,19 +233,19 @@ export const SignUp = () => {
                                         fill="#EA4335"
                                     />
                                 </svg>
-                                Đăng ký với Google
+                                {t("auth.signUp.google")}
                             </Button>
                         </div>
                     </CardContent>
                     <CardFooter className="flex flex-col space-y-4">
                         <Separator />
                         <div className="text-sm text-center text-gray-600 dark:text-gray-400">
-                            Đã có tài khoản?{" "}
+                            {t("auth.signUp.hasAccount")}{" "}
                             <Link
                                 to="/signin"
                                 className="text-brand hover:text-brand-hover hover:underline font-medium"
                             >
-                                Đăng nhập ngay
+                                {t("auth.signUp.signInNow")}
                             </Link>
                         </div>
                     </CardFooter>
@@ -249,7 +255,7 @@ export const SignUp = () => {
             {/* Footer */}
             <div className="border-t py-6 bg-gray-900 text-white mt-auto">
                 <div className="container mx-auto px-4 text-center text-sm dark:text-gray-400">
-                    © 2026 Auction Shop Online. All rights reserved.
+                    © 2026 {t("common.appNameLong")}. {t("footer.copyright").replace("© 2026 AuctionSite. ", "")}
                 </div>
             </div>
 

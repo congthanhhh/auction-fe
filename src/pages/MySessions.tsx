@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import MySessionsList from "@/components/auction/MySessionsList";
 import { CreateProductDialog } from "@/components/auction/CreateProductDialog";
 import { CreateSessionDialog } from "@/components/auction/CreateSessionDialog";
@@ -8,25 +9,15 @@ import { useRequireAuth } from "@/hooks/use-require-auth";
 import { SimplePagination } from "@/components/common/SimplePagination";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Gavel } from "lucide-react";
-import { auctionStatusLabels } from "@/types/auction-labels";
-
-const statusFilterOptions: { value: "ALL" | AuctionStatus; label: string }[] = [
-    { value: "ALL", label: "Tất cả" },
-    { value: "SCHEDULED", label: auctionStatusLabels.SCHEDULED },
-    { value: "ACTIVE", label: auctionStatusLabels.ACTIVE },
-    { value: "WAITING_PAYMENT", label: auctionStatusLabels.WAITING_PAYMENT },
-    { value: "ENDED", label: auctionStatusLabels.ENDED },
-    { value: "CANCELLED", label: auctionStatusLabels.CANCELLED },
-    { value: "FAILED", label: auctionStatusLabels.FAILED },
-];
+import { auctionStatusLabelKeys } from "@/types/auction-labels";
 
 export default function MySessions() {
+    const { t } = useTranslation();
     const requireAuth = useRequireAuth();
 
     const [pageData, setPageData] = useState<PageResponse<AuctionSessionResponse> | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-
     const [page, setPage] = useState<number>(1);
     const [size] = useState<number>(10);
     const [statusFilter, setStatusFilter] = useState<"ALL" | AuctionStatus>("ALL");
@@ -46,18 +37,17 @@ export default function MySessions() {
                 size,
                 statusFilter === "ALL" ? undefined : statusFilter,
             );
-
             setPageData(response);
         } catch (err) {
             const message =
                 err && typeof err === "object" && "message" in err
                     ? String((err as Error).message)
-                    : "Không thể tải danh sách phiên của bạn";
+                    : t("auction.sessions.loadError");
             setError(message);
         } finally {
             setIsLoading(false);
         }
-    }, [page, size, statusFilter]);
+    }, [page, size, statusFilter, t]);
 
     useEffect(() => {
         let isActive = true;
@@ -76,6 +66,16 @@ export default function MySessions() {
 
     const totalPages = pageData?.totalPages ?? 1;
     const totalElements = pageData?.totalElements ?? 0;
+
+    const statusFilterOptions: { value: "ALL" | AuctionStatus; label: string }[] = [
+        { value: "ALL", label: t("auction.sessions.all") },
+        { value: "SCHEDULED", label: t(auctionStatusLabelKeys.SCHEDULED) },
+        { value: "ACTIVE", label: t(auctionStatusLabelKeys.ACTIVE) },
+        { value: "WAITING_PAYMENT", label: t(auctionStatusLabelKeys.WAITING_PAYMENT) },
+        { value: "ENDED", label: t(auctionStatusLabelKeys.ENDED) },
+        { value: "CANCELLED", label: t(auctionStatusLabelKeys.CANCELLED) },
+        { value: "FAILED", label: t(auctionStatusLabelKeys.FAILED) },
+    ];
 
     const handleToggleStatus = async (session: AuctionSessionResponse) => {
         try {
@@ -102,7 +102,7 @@ export default function MySessions() {
             const message =
                 err && typeof err === "object" && "message" in err
                     ? String((err as Error).message)
-                    : "Không thể cập nhật trạng thái phiên";
+                    : t("auction.sessions.updateStatusError");
             setError(message);
         }
     };
@@ -122,16 +122,16 @@ export default function MySessions() {
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-950 dark:text-white">
-                                    Quản lý phiên đấu giá
+                                    {t("auction.sessions.title")}
                                 </h1>
                                 <p className="text-sm text-muted-foreground">
-                                    Tạo phiên, chỉnh thời gian và xử lý trạng thái phiên của sản phẩm.
+                                    {t("auction.sessions.description")}
                                 </p>
                             </div>
                         </div>
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                             <div className="rounded-md border bg-slate-50 px-4 py-2 text-sm dark:bg-gray-950">
-                                <span className="text-muted-foreground">Tổng phiên: </span>
+                                <span className="text-muted-foreground">{t("auction.sessions.total")}</span>
                                 <span className="font-semibold text-foreground">{totalElements}</span>
                             </div>
                             <div className="flex flex-col gap-2 sm:flex-row">
@@ -165,7 +165,7 @@ export default function MySessions() {
 
                 {isLoading && (
                     <p className="rounded-lg border bg-white p-4 text-sm text-muted-foreground dark:bg-gray-900">
-                        Đang tải danh sách phiên của bạn...
+                        {t("auction.sessions.loading")}
                     </p>
                 )}
                 {error && !isLoading && (

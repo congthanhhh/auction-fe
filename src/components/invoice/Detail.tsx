@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { DisputeResponse, InvoiceResponse, ShipInvoiceRequest, DisputeRequest } from "@/types/invoice";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,13 +7,14 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
-import { invoiceStatusLabels, invoiceStatusVariants, invoiceTypeLabels } from "@/types/invoice-labels";
+import { invoiceStatusLabelKeys, invoiceStatusVariants, invoiceTypeLabelKeys } from "@/types/invoice-labels";
 import type { AddressResponse } from "@/types/user";
+import { FeedbackRating, type FeedbackRequest } from "@/types/feedback";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Receipt, CreditCard, Truck, CheckCircle2, XCircle, AlertCircle, Mail, MapPin, Phone, UserRound } from "lucide-react";
+import { Loader2, Receipt, CreditCard, Truck, CheckCircle2, XCircle, AlertCircle, Mail, MapPin, Phone, UserRound, Star, Smile, Meh, Frown } from "lucide-react";
 
 interface InvoiceDetailProps {
     invoice: InvoiceResponse;
@@ -27,6 +29,7 @@ interface InvoiceDetailProps {
     onConfirmReceive?: () => Promise<void>;
     onReportNonpayment?: () => Promise<void>;
     onDispute?: (payload: DisputeRequest) => Promise<void>;
+    onCreateFeedback?: (payload: FeedbackRequest) => Promise<void>;
     dispute?: DisputeResponse | null;
     isLoadingDispute?: boolean;
     disputeError?: string | null;
@@ -45,18 +48,23 @@ export default function InvoiceDetail({
     onConfirmReceive,
     onReportNonpayment,
     onDispute,
+    onCreateFeedback,
     dispute,
     isLoadingDispute,
     disputeError,
 }: InvoiceDetailProps) {
+    const { t } = useTranslation();
     const [isShipDialogOpen, setIsShipDialogOpen] = useState(false);
     const [trackingCode, setTrackingCode] = useState("");
     const [carrier, setCarrier] = useState("");
     const [isActionLoading, setIsActionLoading] = useState(false);
-    
+
     // Dispute state
     const [isDisputeDialogOpen, setIsDisputeDialogOpen] = useState(false);
     const [disputeReason, setDisputeReason] = useState("");
+    const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
+    const [feedbackRating, setFeedbackRating] = useState<FeedbackRating>(FeedbackRating.POSITIVE);
+    const [feedbackComment, setFeedbackComment] = useState("");
 
     const handleShipSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -95,10 +103,58 @@ export default function InvoiceDetail({
             setIsActionLoading(false);
         }
     };
+
+    const handleFeedbackSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!onCreateFeedback) return;
+
+        try {
+            setIsActionLoading(true);
+            await onCreateFeedback({
+                rating: feedbackRating,
+                comment: feedbackComment.trim() || undefined,
+            });
+            setIsFeedbackDialogOpen(false);
+            setFeedbackComment("");
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
     const firstImage = invoice.product.images[0]?.url;
 
     const canPay = invoice.status === "PENDING";
     const isOverdue = invoice.dueDate ? new Date() > new Date(invoice.dueDate) : false;
+    const canCreateFeedback =
+        Boolean(onCreateFeedback) &&
+        !invoice.hasFeedback &&
+        invoice.type === "AUCTION_SALE" &&
+        (invoice.status === "COMPLETED" || (isSeller && invoice.status === "CANCELLED_NON_PAYMENT"));
+    const feedbackTargetLabel = isSeller ? t("invoice.list.buyer", { name: "" }).replace(": ", "") : t("invoice.list.seller", { name: "" }).replace(": ", "");
+    const feedbackRatingOptions = [
+        {
+            value: FeedbackRating.POSITIVE,
+            label: t("invoice.detail.feedbackPositive"),
+            description: `Trải nghiệm tốt với ${feedbackTargetLabel}.`,
+            icon: Smile,
+            className: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300",
+        },
+        {
+            value: FeedbackRating.NEUTRAL,
+            label: t("invoice.detail.feedbackNeutral"),
+            description: "Giao dịch ổn nhưng vẫn có điểm cần cải thiện.",
+            icon: Meh,
+            className: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300",
+        },
+        ...(!isSeller || invoice.status === "CANCELLED_NON_PAYMENT"
+            ? [{
+                value: FeedbackRating.NEGATIVE,
+                label: t("invoice.detail.feedbackNegative"),
+                description: "Trải nghiệm không tốt hoặc có vấn đề nghiêm trọng.",
+                icon: Frown,
+                className: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300",
+            }]
+            : []),
+    ];
 
     const effectiveAddress = selectedAddress ?? null;
 
@@ -141,10 +197,10 @@ export default function InvoiceDetail({
                 <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
                         <CardTitle className="text-xl font-semibold text-brand2 dark:text-white">
-                            Chi tiết đơn hàng #{invoice.id}
+                            {t("invoice.detail.title")} #{invoice.id}
                         </CardTitle>
                         <CardDescription>
-                            {invoiceTypeLabels[invoice.type]} · Phiên đấu giá #{invoice.auctionSessionId}
+                            {t(invoiceTypeLabelKeys[invoice.type])} · #{invoice.auctionSessionId}
                         </CardDescription>
                     </div>
                     <div className="flex flex-col items-start gap-2 sm:items-end">
@@ -153,7 +209,7 @@ export default function InvoiceDetail({
                                 variant="outline"
                                 className={`border text-xs font-medium ${invoiceStatusVariants[invoice.status]}`}
                             >
-                                {invoiceStatusLabels[invoice.status]}
+                                {t(invoiceStatusLabelKeys[invoice.status])}
                             </Badge>
                             {onViewAuction && (
                                 <Button
@@ -163,7 +219,7 @@ export default function InvoiceDetail({
                                     className="text-xs"
                                     onClick={() => onViewAuction(invoice.auctionSessionId)}
                                 >
-                                    Xem phiên đấu giá
+                                    {t("invoice.detail.viewAuction")}
                                 </Button>
                             )}
                         </div>
@@ -181,7 +237,7 @@ export default function InvoiceDetail({
                             ) : (
                                 <XCircle className="h-12 w-12 text-red-500 mb-2" />
                             )}
-                            <h3 className="text-lg font-semibold">{invoiceStatusLabels[invoice.status]}</h3>
+                            <h3 className="text-lg font-semibold">{t(invoiceStatusLabelKeys[invoice.status])}</h3>
                             {invoice.status === "DISPUTE" && (
                                 <div className="mt-4 w-full max-w-2xl rounded-lg border bg-white p-4 text-left shadow-sm dark:bg-gray-950">
                                     <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -201,7 +257,7 @@ export default function InvoiceDetail({
                                         <p className="text-sm text-red-600">{disputeError}</p>
                                     ) : dispute ? (
                                         <div className="space-y-3">
-                                            <p className="whitespace-pre-line break-words text-sm text-foreground">
+                                            <p className="whitespace-pre-line wrap-break-word text-sm text-foreground">
                                                 {dispute.reason}
                                             </p>
                                             <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
@@ -215,7 +271,7 @@ export default function InvoiceDetail({
                                             {dispute.adminNote && (
                                                 <div className="rounded-md bg-muted/60 p-3 text-sm">
                                                     <p className="mb-1 font-medium text-foreground">Ghi chú admin</p>
-                                                    <p className="whitespace-pre-line break-words text-muted-foreground">{dispute.adminNote}</p>
+                                                    <p className="whitespace-pre-line wrap-break-word text-muted-foreground">{dispute.adminNote}</p>
                                                 </div>
                                             )}
                                         </div>
@@ -315,7 +371,7 @@ export default function InvoiceDetail({
                                             value={effectiveAddress ? String(effectiveAddress.id) : ""}
                                             onValueChange={(value) => onChangeAddress(Number(value))}
                                         >
-                                            <SelectTrigger size="sm" className="w-full text-xs sm:w-[220px]">
+                                            <SelectTrigger size="sm" className="w-full text-xs sm:w-55">
                                                 <SelectValue placeholder="Chọn địa chỉ nhận hàng" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -336,7 +392,7 @@ export default function InvoiceDetail({
                                         <UserRound className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                                         <div className="min-w-0">
                                             <p className="text-xs text-muted-foreground">Người nhận</p>
-                                            <p className="break-words text-sm font-medium">{shippingRecipientName || "--"}</p>
+                                            <p className="wrap-break-word text-sm font-medium">{shippingRecipientName || "--"}</p>
                                         </div>
                                     </div>
                                     <div className="grid gap-3 sm:grid-cols-2">
@@ -344,14 +400,14 @@ export default function InvoiceDetail({
                                             <Phone className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                                             <div className="min-w-0">
                                                 <p className="text-xs text-muted-foreground">Số điện thoại</p>
-                                                <p className="break-words text-sm font-medium">{shippingPhone || "--"}</p>
+                                                <p className="wrap-break-word text-sm font-medium">{shippingPhone || "--"}</p>
                                             </div>
                                         </div>
                                         <div className="flex gap-3">
                                             <Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                                             <div className="min-w-0">
                                                 <p className="text-xs text-muted-foreground">Email</p>
-                                                <p className="break-words text-sm font-medium">{shippingEmail || "--"}</p>
+                                                <p className="wrap-break-word text-sm font-medium">{shippingEmail || "--"}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -359,7 +415,7 @@ export default function InvoiceDetail({
                                         <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                                         <div className="min-w-0">
                                             <p className="text-xs text-muted-foreground">Địa chỉ nhận hàng</p>
-                                            <p className="whitespace-pre-line break-words text-sm font-medium">
+                                            <p className="whitespace-pre-line wrap-break-word text-sm font-medium">
                                                 {shippingAddress || "--"}
                                             </p>
                                         </div>
@@ -398,7 +454,7 @@ export default function InvoiceDetail({
                                                     <DialogTrigger asChild>
                                                         <Button size="sm" className="flex-1 bg-brand text-white shadow-sm hover:shadow">Xác nhận gửi hàng</Button>
                                                     </DialogTrigger>
-                                                    <DialogContent className="sm:max-w-[425px]">
+                                                    <DialogContent className="sm:max-w-106.25">
                                                         <DialogHeader className="space-y-3 pb-4 border-b border-gray-100 dark:border-gray-800">
                                                             <div className="w-12 h-12 rounded-full bg-brand/10 text-brand flex items-center justify-center mb-2 mx-auto sm:mx-0">
                                                                 <Truck className="w-6 h-6" />
@@ -487,7 +543,7 @@ export default function InvoiceDetail({
                                                                 {isActionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Khiếu nại / Báo mất"}
                                                             </Button>
                                                         </DialogTrigger>
-                                                        <DialogContent className="sm:max-w-[425px]">
+                                                        <DialogContent className="sm:max-w-106.25">
                                                             <DialogHeader className="space-y-3 pb-4 border-b border-gray-100 dark:border-gray-800">
                                                                 <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-2 mx-auto sm:mx-0">
                                                                     <AlertCircle className="w-6 h-6" />
@@ -525,6 +581,94 @@ export default function InvoiceDetail({
                                         </>
                                     )}
                                 </div>
+
+                                {(canCreateFeedback || invoice.hasFeedback) && (
+                                    <div className="rounded-md border bg-background p-3">
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="flex gap-3">
+                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                                                    <Star className="h-4 w-4" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-foreground">
+                                                        Đánh giá {feedbackTargetLabel}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {invoice.hasFeedback
+                                                            ? "Bạn đã gửi đánh giá cho giao dịch này."
+                                                            : "Chia sẻ trải nghiệm để cập nhật uy tín người dùng."}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {canCreateFeedback && (
+                                                <Dialog open={isFeedbackDialogOpen} onOpenChange={setIsFeedbackDialogOpen}>
+                                                    <DialogTrigger asChild>
+                                                        <Button size="sm" variant="outline" className="gap-2">
+                                                            <Star className="h-4 w-4" />
+                                                            Gửi đánh giá
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="sm:max-w-xl">
+                                                        <DialogHeader>
+                                                            <DialogTitle>Đánh giá {feedbackTargetLabel}</DialogTitle>
+                                                            <DialogDescription>
+                                                                Đánh giá này sẽ ảnh hưởng trực tiếp đến điểm uy tín của {feedbackTargetLabel}.
+                                                            </DialogDescription>
+                                                        </DialogHeader>
+                                                        <form onSubmit={handleFeedbackSubmit} className="space-y-5">
+                                                            <div className="grid gap-3">
+                                                                {feedbackRatingOptions.map((option) => {
+                                                                    const Icon = option.icon;
+                                                                    const isSelected = feedbackRating === option.value;
+
+                                                                    return (
+                                                                        <button
+                                                                            key={option.value}
+                                                                            type="button"
+                                                                            onClick={() => setFeedbackRating(option.value)}
+                                                                            className={`rounded-md border p-3 text-left transition ${isSelected ? `${option.className} ring-2 ring-brand/30` : "bg-background hover:bg-muted/60"}`}
+                                                                        >
+                                                                            <div className="flex gap-3">
+                                                                                <Icon className="mt-0.5 h-5 w-5 shrink-0" />
+                                                                                <div>
+                                                                                    <p className="text-sm font-semibold">{option.label}</p>
+                                                                                    <p className="text-xs opacity-80">{option.description}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+
+                                                            <div className="space-y-2">
+                                                                <Label htmlFor="feedback-comment">Nhận xét</Label>
+                                                                <textarea
+                                                                    id="feedback-comment"
+                                                                    value={feedbackComment}
+                                                                    onChange={(e) => setFeedbackComment(e.target.value)}
+                                                                    rows={4}
+                                                                    className="min-h-24 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                                                    placeholder="Viết vài dòng về trải nghiệm giao dịch..."
+                                                                />
+                                                            </div>
+
+                                                            <DialogFooter>
+                                                                <Button type="button" variant="ghost" onClick={() => setIsFeedbackDialogOpen(false)}>
+                                                                    Hủy
+                                                                </Button>
+                                                                <Button type="submit" className="bg-brand text-white" disabled={isActionLoading}>
+                                                                    {isActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                                    Gửi đánh giá
+                                                                </Button>
+                                                            </DialogFooter>
+                                                        </form>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

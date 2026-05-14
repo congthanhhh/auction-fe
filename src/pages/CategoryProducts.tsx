@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import ViewAllCard, { type AuctionListItem, type ProductFilterState } from "@/components/auction/ViewAllCard";
 import { categoryService } from "@/services/categoryService";
 import { auctionService } from "@/services/auctionService";
@@ -25,6 +26,7 @@ function mapSessionToAuctionItem(session: AuctionSessionResponse): AuctionListIt
 }
 
 export default function CategoryProducts() {
+    const { t } = useTranslation();
     const { id } = useParams();
     const categoryId = Number(id);
 
@@ -39,7 +41,7 @@ export default function CategoryProducts() {
     useEffect(() => {
         const fetchCategorySessions = async () => {
             if (!Number.isFinite(categoryId)) {
-                setError("Invalid category id");
+                setError(t("auction.categories.invalidId"));
                 setLoading(false);
                 return;
             }
@@ -68,7 +70,7 @@ export default function CategoryProducts() {
                 setError(
                     err && typeof err === "object" && "message" in err
                         ? String((err as Error).message)
-                        : "Failed to load auction sessions in this category.",
+                        : t("auction.categories.loadSessionsError"),
                 );
             } finally {
                 setLoading(false);
@@ -76,7 +78,7 @@ export default function CategoryProducts() {
         };
 
         fetchCategorySessions();
-    }, [categoryId]);
+    }, [categoryId, t]);
 
     const filteredAndSortedSessions = useMemo(() => {
         const keyword = filters.keyword?.trim().toLowerCase();
@@ -144,7 +146,7 @@ export default function CategoryProducts() {
     if (loading) {
         return (
             <div className="container mx-auto px-4 py-12 text-center text-sm text-muted-foreground">
-                Loading auction sessions...
+                {t("auction.categories.loadingSessions")}
             </div>
         );
     }
@@ -160,7 +162,7 @@ export default function CategoryProducts() {
     if (!category) {
         return (
             <div className="container mx-auto px-4 py-12 text-center text-sm text-muted-foreground">
-                Category not found.
+                {t("auction.categories.notFound")}
             </div>
         );
     }
@@ -174,17 +176,17 @@ export default function CategoryProducts() {
                             {category.name}
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            {category.description || "Browse active auctions in this category."}
+                            {category.description || t("auction.categories.browseActive")}
                         </p>
                     </div>
                     <Link to="/categories" className="text-sm font-medium text-brand hover:underline">
-                        Back to Categories
+                        {t("auction.categories.backCategories")}
                     </Link>
                 </div>
             </div>
 
             <ViewAllCard
-                title={`${category.name} Auctions`}
+                title={t("auction.categories.categoryAuctions", { name: category.name })}
                 items={pagedItems}
                 totalItems={filteredAndSortedSessions.length}
                 itemsPerPage={itemsPerPage}

@@ -1,10 +1,27 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { paymentService } from "@/services/paymentService";
 import type { PaymentResponse } from "@/types/payment";
 
+function getErrorMessage(error: unknown, fallback: string) {
+    if (error instanceof Error && error.message) {
+        return error.message;
+    }
+
+    if (typeof error === "object" && error !== null && "message" in error) {
+        const message = (error as { message?: unknown }).message;
+        if (typeof message === "string" && message) {
+            return message;
+        }
+    }
+
+    return fallback;
+}
+
 export const VnPayCallback = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
@@ -17,7 +34,7 @@ export const VnPayCallback = () => {
             const entries = Array.from(searchParams.entries());
 
             if (entries.length === 0) {
-                setError("Thiếu tham số thanh toán từ VNPay.");
+                setError(t("invoice.payment.missingParams"));
                 setIsLoading(false);
                 return;
             }
@@ -29,17 +46,16 @@ export const VnPayCallback = () => {
                 setError(null);
                 const result = await paymentService.handleVnPayCallback(params);
                 setPaymentResult(result);
-            } catch (err: any) {
-                // eslint-disable-next-line no-console
+            } catch (err: unknown) {
                 console.error("Failed to handle VNPay callback:", err);
-                setError(err?.message || "Không xử lý được kết quả thanh toán VNPay.");
+                setError(getErrorMessage(err, t("invoice.payment.handleError")));
             } finally {
                 setIsLoading(false);
             }
         };
 
         handleCallback();
-    }, [searchParams]);
+    }, [searchParams, t]);
 
     const handleViewInvoice = () => {
         if (paymentResult?.invoiceId) {
@@ -61,13 +77,13 @@ export const VnPayCallback = () => {
                 {isLoading ? (
                     <div className="flex items-center justify-center gap-2 text-brand2">
                         <Loader2 className="h-5 w-5 animate-spin" />
-                        <span className="text-sm font-medium">Đang xử lý thanh toán VNPay...</span>
+                        <span className="text-sm font-medium">{t("invoice.payment.processing")}</span>
                     </div>
                 ) : error ? (
                     <div className="space-y-2">
                         <div className="flex items-center justify-center gap-2 text-red-600">
                             <XCircle className="h-6 w-6" />
-                            <span className="text-sm font-semibold">Thanh toán thất bại</span>
+                            <span className="text-sm font-semibold">{t("invoice.payment.failed")}</span>
                         </div>
                         <p className="text-xs text-red-600 dark:text-red-400">
                             {error}
@@ -77,7 +93,7 @@ export const VnPayCallback = () => {
                             onClick={handleBackToInvoices}
                             className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-xs font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground"
                         >
-                            Quay lại danh sách đơn hàng
+                            {t("invoice.payment.backToOrders")}
                         </button>
                     </div>
                 ) : paymentResult ? (
@@ -89,19 +105,19 @@ export const VnPayCallback = () => {
                                 <XCircle className="h-6 w-6" />
                             )}
                             <span className="text-sm font-semibold">
-                                {isSuccess ? "Thanh toán thành công" : "Thanh toán không thành công"}
+                                {isSuccess ? t("invoice.payment.success") : t("invoice.payment.unsuccessful")}
                             </span>
                         </div>
                         <p className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-line">
                             {paymentResult.message}
                         </p>
                         <div className="mt-2 space-y-1 text-left text-xs text-gray-600 dark:text-gray-300">
-                            <p><span className="font-semibold">Mã giao dịch:</span> {paymentResult.transactionId}</p>
-                            <p><span className="font-semibold">Mã hoá đơn:</span> {paymentResult.invoiceId}</p>
+                            <p><span className="font-semibold">{t("invoice.payment.transactionId")}</span> {paymentResult.transactionId}</p>
+                            <p><span className="font-semibold">{t("invoice.payment.invoiceId")}</span> {paymentResult.invoiceId}</p>
                             {paymentResult.paymentTime && (
-                                <p><span className="font-semibold">Thời gian thanh toán:</span> {paymentResult.paymentTime}</p>
+                                <p><span className="font-semibold">{t("invoice.payment.paymentTime")}</span> {paymentResult.paymentTime}</p>
                             )}
-                            <p><span className="font-semibold">Mã kết quả:</span> {paymentResult.code}</p>
+                            <p><span className="font-semibold">{t("invoice.payment.resultCode")}</span> {paymentResult.code}</p>
                         </div>
                         <div className="mt-3 flex flex-col gap-2">
                             <button
@@ -109,14 +125,14 @@ export const VnPayCallback = () => {
                                 onClick={handleViewInvoice}
                                 className="inline-flex h-9 items-center justify-center rounded-md bg-brand text-white px-4 text-xs font-medium shadow-xs transition-colors hover:bg-brand/90"
                             >
-                                Xem hoá đơn
+                                {t("invoice.payment.viewInvoice")}
                             </button>
                             <button
                                 type="button"
                                 onClick={handleBackToInvoices}
                                 className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-xs font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground"
                             >
-                                Về danh sách đơn hàng
+                                {t("invoice.payment.backToOrders")}
                             </button>
                         </div>
                     </div>

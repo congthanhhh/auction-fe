@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { categoryService } from "@/services/categoryService";
 import type { CategoryResponse } from "@/types/auction";
 
 export default function Categories() {
+    const { t } = useTranslation();
     const [categories, setCategories] = useState<CategoryResponse[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -14,13 +16,12 @@ export default function Categories() {
             try {
                 setIsLoading(true);
                 setError(null);
-                // Lấy "tất cả" category trong một lần gọi, UI không phân trang
                 const response = await categoryService.getCategories(1, 1000);
                 setCategories(response.data ?? []);
-            } catch (err: any) {
-                // eslint-disable-next-line no-console
+            } catch (err: unknown) {
                 console.error("Failed to fetch categories:", err);
-                setError(err?.message || "Không tải được danh sách danh mục.");
+                const message = err instanceof Error && err.message ? err.message : t("auction.categories.loadError");
+                setError(message);
                 setCategories([]);
             } finally {
                 setIsLoading(false);
@@ -28,7 +29,7 @@ export default function Categories() {
         };
 
         fetchAllCategories();
-    }, []);
+    }, [t]);
 
     const categoryBgClasses = [
         "bg-rose-50 border-rose-100",
@@ -55,23 +56,23 @@ export default function Categories() {
                 <div className="flex items-center justify-between gap-3">
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold text-brand2 dark:text-white">
-                            All Categories
+                            {t("auction.categories.allTitle")}
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Browse all available categories and their descriptions.
+                            {t("auction.categories.allDescription")}
                         </p>
                     </div>
                     <Link
                         to="/"
                         className="text-xs md:text-sm font-medium text-brand hover:underline"
                     >
-                        ← Back to Home
+                        {t("auction.categories.backHome")}
                     </Link>
                 </div>
 
                 {isLoading ? (
                     <div className="py-12 text-center text-sm text-muted-foreground">
-                        Loading categories...
+                        {t("auction.categories.loading")}
                     </div>
                 ) : error ? (
                     <div className="py-12 text-center text-sm text-red-600 dark:text-red-400">
@@ -79,7 +80,7 @@ export default function Categories() {
                     </div>
                 ) : categories.length === 0 ? (
                     <div className="py-12 text-center text-sm text-muted-foreground">
-                        No categories found.
+                        {t("auction.categories.empty")}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
@@ -95,7 +96,7 @@ export default function Categories() {
                                     </CardHeader>
                                     <CardContent>
                                         <CardDescription className="text-xs md:text-sm text-muted-foreground whitespace-pre-line min-h-[3rem]">
-                                            {category.description || "No description provided."}
+                                            {category.description || t("auction.categories.noDescription")}
                                         </CardDescription>
                                     </CardContent>
                                 </Card>

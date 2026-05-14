@@ -77,6 +77,13 @@ export const API_ENDPOINTS = {
     UPLOAD: '/images/upload',
     DELETE: (id: number) => `/images/${id}`,
   },
+  // Feedback
+  FEEDBACK: {
+    CREATE: (invoiceId: number) => `/feedback/invoice/${invoiceId}`,
+    UPDATE: (id: number) => `/feedback/${id}`,
+    MY_TOTAL: '/feedback/my-total-feedback',
+    PUBLIC: (userId: string) => `/feedback/public/${userId}`,
+  },
   // Payment
   PAYMENT: {
     VN_PAY: '/payments/vn-pay',

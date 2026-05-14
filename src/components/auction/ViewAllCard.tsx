@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from "react"
 import { Search } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -58,7 +59,7 @@ interface ViewAllCardProps {
 const allCategoriesValue = "ALL"
 
 export default function ViewAllCard({
-    title = "Auction Items",
+    title,
     items,
     totalItems,
     itemsPerPage,
@@ -69,6 +70,7 @@ export default function ViewAllCard({
     onFilterChange,
     onSortChange,
 }: ViewAllCardProps) {
+    const { t } = useTranslation()
     const [keyword, setKeyword] = useState("")
     const [categoryValue, setCategoryValue] = useState(
         selectedCategoryId ? String(selectedCategoryId) : allCategoriesValue,
@@ -114,19 +116,19 @@ export default function ViewAllCard({
                         className="sticky top-4 rounded-lg border bg-white p-4 shadow-sm dark:bg-gray-900"
                     >
                         <div className="flex items-center justify-between gap-3">
-                            <h2 className="text-xl font-bold text-brand2 dark:text-brand">Filter Auctions</h2>
+                            <h2 className="text-xl font-bold text-brand2 dark:text-brand">{t("auction.list.filterTitle")}</h2>
                             <Search className="size-4 text-muted-foreground" />
                         </div>
 
                         <div className="mt-4 space-y-4">
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-foreground" htmlFor="product-keyword">
-                                    Keyword
+                                    {t("auction.list.keyword")}
                                 </label>
                                 <Input
                                     id="product-keyword"
                                     type="text"
-                                    placeholder="Search by product name"
+                                    placeholder={t("auction.list.searchPlaceholder")}
                                     value={keyword}
                                     onChange={(event) => setKeyword(event.target.value)}
                                 />
@@ -135,18 +137,18 @@ export default function ViewAllCard({
                             <Separator />
 
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-foreground">Category</label>
+                                <label className="text-sm font-medium text-foreground">{t("auction.list.category")}</label>
                                 <Select
                                     value={categoryValue}
                                     onValueChange={setCategoryValue}
                                     disabled={Boolean(selectedCategoryId)}
                                 >
                                     <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="All categories" />
+                                        <SelectValue placeholder={t("auction.list.allCategories")} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {!selectedCategoryId && (
-                                            <SelectItem value={allCategoriesValue}>All categories</SelectItem>
+                                            <SelectItem value={allCategoriesValue}>{t("auction.list.allCategories")}</SelectItem>
                                         )}
                                         {categories.map((category) => (
                                             <SelectItem key={category.id} value={String(category.id)}>
@@ -160,12 +162,12 @@ export default function ViewAllCard({
                             <Separator />
 
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-foreground">Start price</label>
+                                <label className="text-sm font-medium text-foreground">{t("auction.list.startPrice")}</label>
                                 <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                                     <Input
                                         type="number"
                                         min={0}
-                                        placeholder="Min"
+                                        placeholder={t("auction.list.min")}
                                         value={priceMin}
                                         onChange={(event) => setPriceMin(event.target.value)}
                                     />
@@ -173,7 +175,7 @@ export default function ViewAllCard({
                                     <Input
                                         type="number"
                                         min={0}
-                                        placeholder="Max"
+                                        placeholder={t("auction.list.max")}
                                         value={priceMax}
                                         onChange={(event) => setPriceMax(event.target.value)}
                                     />
@@ -182,10 +184,10 @@ export default function ViewAllCard({
 
                             <div className="grid grid-cols-2 gap-2">
                                 <Button type="submit" className="bg-brand hover:bg-brand-hover">
-                                    Apply
+                                    {t("common.apply")}
                                 </Button>
                                 <Button type="button" variant="outline" onClick={handleClearFilters}>
-                                    Clear
+                                    {t("common.clear")}
                                 </Button>
                             </div>
                         </div>
@@ -195,25 +197,28 @@ export default function ViewAllCard({
                 <main>
                     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                            {title && (
-                                <h1 className="text-3xl font-bold text-brand2 dark:text-brand">{title}</h1>
-                            )}
+                            <h1 className="text-3xl font-bold text-brand2 dark:text-brand">
+                                {title ?? t("auction.list.title")}
+                            </h1>
                             <p className="mt-1 text-sm text-muted-foreground">
-                                Showing {formatNumber(firstItemIndex)}-{formatNumber(lastItemIndex)} of{" "}
-                                {formatNumber(totalItems)} auctions
+                                {t("auction.list.showing", {
+                                    first: formatNumber(firstItemIndex),
+                                    last: formatNumber(lastItemIndex),
+                                    total: formatNumber(totalItems),
+                                })}
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">Sort by</span>
+                            <span className="text-sm text-muted-foreground">{t("auction.list.sortBy")}</span>
                             <Select defaultValue="newest" onValueChange={onSortChange}>
                                 <SelectTrigger className="w-48">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="newest">Newest</SelectItem>
-                                    <SelectItem value="oldest">Oldest</SelectItem>
-                                    <SelectItem value="price_asc">Price: low to high</SelectItem>
-                                    <SelectItem value="price_desc">Price: high to low</SelectItem>
+                                    <SelectItem value="newest">{t("auction.list.sortNewest")}</SelectItem>
+                                    <SelectItem value="oldest">{t("auction.list.sortOldest")}</SelectItem>
+                                    <SelectItem value="price_asc">{t("auction.list.sortPriceAsc")}</SelectItem>
+                                    <SelectItem value="price_desc">{t("auction.list.sortPriceDesc")}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -237,9 +242,9 @@ export default function ViewAllCard({
                             ))
                         ) : (
                             <div className="col-span-full rounded-lg border bg-white py-12 text-center dark:bg-gray-900">
-                                <p className="text-lg font-medium text-foreground">No active auctions found</p>
+                                <p className="text-lg font-medium text-foreground">{t("auction.list.emptyTitle")}</p>
                                 <p className="mt-1 text-sm text-muted-foreground">
-                                    Try changing the keyword, category, or price range.
+                                    {t("auction.list.emptyDescription")}
                                 </p>
                             </div>
                         )}

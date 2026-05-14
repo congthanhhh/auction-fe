@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import MyJoinedList from "@/components/auction/MyJoinedList";
 import { auctionService } from "@/services/auctionService";
 import type { AuctionSessionResponse, AuctionStatus, PageResponse } from "@/types/auction";
@@ -6,25 +7,15 @@ import { useRequireAuth } from "@/hooks/use-require-auth";
 import { SimplePagination } from "@/components/common/SimplePagination";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BadgeDollarSign } from "lucide-react";
-import { auctionStatusLabels } from "@/types/auction-labels";
-
-const statusFilterOptions: { value: "ALL" | AuctionStatus; label: string }[] = [
-    { value: "ALL", label: "Tất cả" },
-    { value: "ACTIVE", label: auctionStatusLabels.ACTIVE },
-    { value: "WAITING_PAYMENT", label: auctionStatusLabels.WAITING_PAYMENT },
-    { value: "SCHEDULED", label: auctionStatusLabels.SCHEDULED },
-    { value: "ENDED", label: auctionStatusLabels.ENDED },
-    { value: "FAILED", label: auctionStatusLabels.FAILED },
-    { value: "CANCELLED", label: auctionStatusLabels.CANCELLED },
-];
+import { auctionStatusLabelKeys } from "@/types/auction-labels";
 
 export default function MyJoinedAuctions() {
+    const { t } = useTranslation();
     const requireAuth = useRequireAuth();
 
     const [pageData, setPageData] = useState<PageResponse<AuctionSessionResponse> | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-
     const [page, setPage] = useState<number>(1);
     const [size] = useState<number>(10);
     const [statusFilter, setStatusFilter] = useState<"ALL" | AuctionStatus>("ALL");
@@ -56,7 +47,7 @@ export default function MyJoinedAuctions() {
                 const message =
                     err && typeof err === "object" && "message" in err
                         ? String((err as Error).message)
-                        : "Không thể tải danh sách phiên đã tham gia";
+                        : t("auction.joined.loadError");
                 setError(message);
             } finally {
                 if (isMounted) {
@@ -70,10 +61,20 @@ export default function MyJoinedAuctions() {
         return () => {
             isMounted = false;
         };
-    }, [page, size, statusFilter]);
+    }, [page, size, statusFilter, t]);
 
     const totalPages = pageData?.totalPages ?? 1;
     const totalElements = pageData?.totalElements ?? 0;
+
+    const statusFilterOptions: { value: "ALL" | AuctionStatus; label: string }[] = [
+        { value: "ALL", label: t("auction.sessions.all") },
+        { value: "ACTIVE", label: t(auctionStatusLabelKeys.ACTIVE) },
+        { value: "WAITING_PAYMENT", label: t(auctionStatusLabelKeys.WAITING_PAYMENT) },
+        { value: "SCHEDULED", label: t(auctionStatusLabelKeys.SCHEDULED) },
+        { value: "ENDED", label: t(auctionStatusLabelKeys.ENDED) },
+        { value: "FAILED", label: t(auctionStatusLabelKeys.FAILED) },
+        { value: "CANCELLED", label: t(auctionStatusLabelKeys.CANCELLED) },
+    ];
 
     const handlePageChange = (nextPage: number) => {
         setPage(nextPage);
@@ -90,15 +91,15 @@ export default function MyJoinedAuctions() {
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-950 dark:text-white">
-                                    Phiên đấu giá đã tham gia
+                                    {t("auction.joined.title")}
                                 </h1>
                                 <p className="text-sm text-muted-foreground">
-                                    Theo dõi giá hiện tại, giá tối đa của bạn và phiên cần thanh toán.
+                                    {t("auction.joined.description")}
                                 </p>
                             </div>
                         </div>
                         <div className="rounded-md border bg-slate-50 px-4 py-2 text-sm dark:bg-gray-950">
-                            <span className="text-muted-foreground">Tổng phiên: </span>
+                            <span className="text-muted-foreground">{t("auction.joined.total")}</span>
                             <span className="font-semibold text-foreground">{totalElements}</span>
                         </div>
                     </div>
@@ -127,7 +128,7 @@ export default function MyJoinedAuctions() {
 
                 {isLoading && (
                     <p className="rounded-lg border bg-white p-4 text-sm text-muted-foreground dark:bg-gray-900">
-                        Đang tải danh sách phiên đã tham gia...
+                        {t("auction.joined.loading")}
                     </p>
                 )}
                 {error && !isLoading && (

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
     Dialog,
     DialogContent,
@@ -21,6 +22,7 @@ interface OTPDialogProps {
     onResendOtp?: () => Promise<void> | void
 }
 export function OTPDialog({ open, onOpenChange, email, onVerified, onResendOtp }: OTPDialogProps) {
+    const { t } = useTranslation()
     const [otp, setOtp] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -32,14 +34,14 @@ export function OTPDialog({ open, onOpenChange, email, onVerified, onResendOtp }
         setInfoMessage(null)
 
         if (!otp.trim()) {
-            setError("Vui lòng nhập mã OTP")
+            setError(t("auth.otp.required"))
             return
         }
 
         try {
             setIsSubmitting(true)
             const response = await authService.verifyOtp({ email, otp })
-            setInfoMessage(response.message || "Xác thực thành công")
+            setInfoMessage(response.message || t("auth.otp.success"))
             setTimeout(() => {
                 onOpenChange(false)
                 onVerified()
@@ -47,7 +49,7 @@ export function OTPDialog({ open, onOpenChange, email, onVerified, onResendOtp }
                 setInfoMessage(null)
             }, 400)
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Xác thực OTP thất bại"
+            const message = err instanceof Error ? err.message : t("auth.otp.error")
             setError(message)
         } finally {
             setIsSubmitting(false)
@@ -61,9 +63,9 @@ export function OTPDialog({ open, onOpenChange, email, onVerified, onResendOtp }
         try {
             setIsSubmitting(true)
             await onResendOtp()
-            setInfoMessage("Đã gửi lại mã OTP, vui lòng kiểm tra email")
+            setInfoMessage(t("auth.otp.resendSuccess"))
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Gửi lại OTP thất bại"
+            const message = err instanceof Error ? err.message : t("auth.otp.resendError")
             setError(message)
         } finally {
             setIsSubmitting(false)
@@ -74,9 +76,9 @@ export function OTPDialog({ open, onOpenChange, email, onVerified, onResendOtp }
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle className="text-brand2">Xác thực OTP</DialogTitle>
+                    <DialogTitle className="text-brand2">{t("auth.otp.title")}</DialogTitle>
                     <DialogDescription>
-                        Nhập mã OTP đã được gửi đến email <span className="font-medium">{email}</span>
+                        {t("auth.otp.description", { email })}
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit}>
@@ -92,12 +94,12 @@ export function OTPDialog({ open, onOpenChange, email, onVerified, onResendOtp }
                         )}
                         <div className="space-y-2">
                             <Label htmlFor="otp" className="text-brand2">
-                                Mã OTP <span className="text-red-500">*</span>
+                                {t("auth.otp.code")} <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="otp"
                                 type="text"
-                                placeholder="Nhập mã 6 số"
+                                placeholder={t("auth.otp.placeholder")}
                                 value={otp}
                                 onChange={(e) => setOtp(e.target.value)}
                                 maxLength={6}
@@ -106,7 +108,7 @@ export function OTPDialog({ open, onOpenChange, email, onVerified, onResendOtp }
                             />
                             <div className="flex items-center justify-between text-xs">
                                 <p className="text-gray-500">
-                                    Không nhận được mã?
+                                    {t("auth.otp.noCode")}
                                 </p>
                                 <Button
                                     type="button"
@@ -115,7 +117,7 @@ export function OTPDialog({ open, onOpenChange, email, onVerified, onResendOtp }
                                     onClick={handleResendOTP}
                                     disabled={isSubmitting || !onResendOtp}
                                 >
-                                    Gửi lại
+                                    {t("auth.otp.resend")}
                                 </Button>
                             </div>
                         </div>
@@ -132,10 +134,10 @@ export function OTPDialog({ open, onOpenChange, email, onVerified, onResendOtp }
                             }}
                             disabled={isSubmitting}
                         >
-                            Hủy
+                            {t("auth.otp.cancel")}
                         </Button>
                         <Button type="submit" className="bg-brand hover:bg-brand-hover" disabled={isSubmitting}>
-                            {isSubmitting ? "Đang xác thực..." : "Xác nhận"}
+                            {isSubmitting ? t("auth.otp.submitting") : t("auth.otp.submit")}
                         </Button>
                     </DialogFooter>
                 </form>

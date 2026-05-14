@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import ViewAllCard, { type AuctionListItem, type ProductFilterState } from "@/components/auction/ViewAllCard"
 import { categoryService } from "@/services/categoryService"
 import { productService } from "@/services/productService"
@@ -43,6 +44,7 @@ function mapSessionToAuctionItem(session: AuctionSessionResponse): AuctionListIt
 }
 
 export default function Recommended() {
+    const { t } = useTranslation()
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage] = useState(12)
     const [totalItems, setTotalItems] = useState(0)
@@ -124,7 +126,7 @@ export default function Recommended() {
             } catch (err) {
                 if (!isMounted) return
                 console.error("Failed to load recommended auctions:", err)
-                setError("Failed to load recommended auctions. Please try again later.")
+                setError(t("auction.list.loadRecommendedError"))
                 setItems([])
                 setTotalItems(0)
             } finally {
@@ -137,7 +139,7 @@ export default function Recommended() {
         return () => {
             isMounted = false
         }
-    }, [currentPage, itemsPerPage, sortBy, filters])
+    }, [currentPage, itemsPerPage, sortBy, filters, t])
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page)
@@ -156,7 +158,7 @@ export default function Recommended() {
     if (loading) {
         return (
             <div className="container mx-auto px-4 py-12 text-center">
-                <p className="text-gray-500 dark:text-gray-400">Loading recommended auctions...</p>
+                <p className="text-gray-500 dark:text-gray-400">{t("auction.list.loadingRecommended")}</p>
             </div>
         )
     }
@@ -171,7 +173,7 @@ export default function Recommended() {
 
     return (
         <ViewAllCard
-            title="Recommended Auctions"
+            title={t("auction.list.recommendedTitle")}
             items={items}
             totalItems={totalItems}
             itemsPerPage={itemsPerPage}

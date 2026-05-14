@@ -8,16 +8,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, Loader2, Mail, MessageCircle, Phone, Printer, Share2, ShieldCheck, Star, UserRound } from "lucide-react";
+import { CalendarDays, Clock, Gavel, History, Loader2, Mail, MessageCircle, Phone, Printer, Share2, ShieldCheck, Star, TrendingUp, Trophy, UserRound } from "lucide-react";
 import { useAuctionDetailStore } from "@/stores/auctionDetailStore";
+import { useAuthStore } from "@/stores/authStore";
 import { format, differenceInDays, differenceInHours, differenceInMinutes, isBefore } from 'date-fns';
 import { socketService } from "@/services/socketService";
 import type { BidResponse, PriceUpdateData } from "@/types/auction";
 import type { PublicUserProfileResponse } from "@/types/user";
+import type { FeedbackDto, FeedbackRating } from "@/types/feedback";
 import { formatCurrency } from "@/lib/utils";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { auctionService } from "@/services/auctionService";
 import { userService } from "@/services/userService";
+import { feedbackService } from "@/services/feedbackService";
 
 const calculateTimeLeft = (endTime: string) => {
     const now = new Date();
@@ -63,6 +66,26 @@ const getInitials = (value: string) =>
         .slice(0, 2)
         .toUpperCase() || "U";
 
+const getBidderDisplayName = (bid: BidResponse) =>
+    `${bid.user.firstName} ${bid.user.lastName}`.trim() || bid.user.username;
+
+const formatBidTimestamp = (value: unknown) => {
+    const bidDate = parseBidTime(value);
+    return bidDate ? format(bidDate, 'dd/MM/yyyy HH:mm:ss') : '---';
+};
+
+const feedbackRatingLabels: Record<FeedbackRating, string> = {
+    POSITIVE: "Tích cực",
+    NEUTRAL: "Trung lập",
+    NEGATIVE: "Tiêu cực",
+};
+
+const feedbackRatingClasses: Record<FeedbackRating, string> = {
+    POSITIVE: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300",
+    NEUTRAL: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300",
+    NEGATIVE: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300",
+};
+
 const getErrorMessage = (error: unknown, fallback: string) => {
     if (error instanceof Error && error.message) {
         return error.message;
@@ -82,6 +105,7 @@ export default function Detail() {
     const { id } = useParams<{ id: string }>();
     const requireAuth = useRequireAuth();
     const navigate = useNavigate();
+    const currentUser = useAuthStore((state) => state.user);
     const {
         auction,
         isLoading,
@@ -128,6 +152,10 @@ export default function Detail() {
     const [sellerProfile, setSellerProfile] = useState<PublicUserProfileResponse | null>(null);
     const [isSellerLoading, setIsSellerLoading] = useState(false);
     const [sellerError, setSellerError] = useState<string | null>(null);
+    const [sellerFeedback, setSellerFeedback] = useState<FeedbackDto[]>([]);
+    const [sellerFeedbackTotal, setSellerFeedbackTotal] = useState(0);
+    const [isSellerFeedbackLoading, setIsSellerFeedbackLoading] = useState(false);
+    const [sellerFeedbackError, setSellerFeedbackError] = useState<string | null>(null);
 
     useEffect(() => {
         const sellerId = auction?.product.seller.id;
@@ -164,6 +192,50 @@ export default function Detail() {
         };
 
         fetchSellerProfile();
+
+        return () => {
+            shouldIgnore = true;
+        };
+    }, [auction?.product.seller.id]);
+
+    useEffect(() => {
+        const sellerId = auction?.product.seller.id;
+
+        if (!sellerId) {
+            setSellerFeedback([]);
+            setSellerFeedbackTotal(0);
+            setSellerFeedbackError(null);
+            setIsSellerFeedbackLoading(false);
+            return;
+        }
+
+        let shouldIgnore = false;
+
+        const fetchSellerFeedback = async () => {
+            try {
+                setIsSellerFeedbackLoading(true);
+                setSellerFeedbackError(null);
+                const response = await feedbackService.getPublicFeedback(sellerId, 1, 3);
+
+                if (!shouldIgnore) {
+                    setSellerFeedback(response.data ?? []);
+                    setSellerFeedbackTotal(response.totalElements ?? 0);
+                }
+            } catch (error) {
+                console.error("Failed to load seller feedback:", error);
+                if (!shouldIgnore) {
+                    setSellerFeedback([]);
+                    setSellerFeedbackTotal(0);
+                    setSellerFeedbackError("Không thể tải đánh giá người bán.");
+                }
+            } finally {
+                if (!shouldIgnore) {
+                    setIsSellerFeedbackLoading(false);
+                }
+            }
+        };
+
+        fetchSellerFeedback();
 
         return () => {
             shouldIgnore = true;
@@ -244,6 +316,13 @@ export default function Detail() {
     const sellerJoinedDate = sellerProfile?.createdAt
         ? format(new Date(sellerProfile.createdAt), 'dd/MM/yyyy')
         : null;
+    const bidEntries = bidHistory?.data ?? [];
+    const latestBid = bidEntries[0];
+    const latestBidTime = latestBid ? formatBidTimestamp(latestBid.bidTime) : '--';
+    const highestBidderName = auction.highestBidder
+        ? `${auction.highestBidder.firstName} ${auction.highestBidder.lastName}`.trim() || auction.highestBidder.username
+        : '--';
+    const hasMoreBidHistory = bidHistory ? bidHistory.totalElements > bidEntries.length : false;
 
 
     return (
@@ -252,7 +331,7 @@ export default function Detail() {
                 <div className="grid w-full grid-cols-1 items-start gap-5 md:gap-6 lg:grid-cols-[minmax(0,1.12fr)_minmax(360px,0.88fr)]">
                     {/* Box 1 - Images */}
                     <div className="space-y-3">
-                        <div className="aspect-[4/3] flex w-full items-center justify-center overflow-hidden rounded-md border bg-muted">
+                        <div className="aspect-4/3 flex w-full items-center justify-center overflow-hidden rounded-md border bg-muted">
                             <img
                                 src={images[selectedImageIndex]}
                                 alt="Auction item"
@@ -307,7 +386,7 @@ export default function Detail() {
                                 <div className="space-y-1">
                                     <div className="flex flex-col gap-1 pb-3 sm:flex-row sm:items-center sm:justify-between">
                                         <span className="text-xl font-bold">Current Price:</span>
-                                        <span className="break-words text-xl font-bold text-gray-900 dark:text-white sm:text-right">
+                                        <span className="wrap-break-word text-xl font-bold text-gray-900 dark:text-white sm:text-right">
                                             {formatCurrency(currentPrice)}
                                         </span>
                                     </div>
@@ -427,46 +506,177 @@ export default function Detail() {
                     </TabsList>
 
                     <TabsContent value="bidHistory" className="mx-auto mt-6 max-w-6xl sm:mt-8">
-                        <div className="space-y-4">
-                            <div className="overflow-x-auto rounded-md border">
-                                <Table className="min-w-[760px]">
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Bidder</TableHead>
-                                            <TableHead>Bid Amount</TableHead>
-                                            <TableHead>High Bidder</TableHead>
-                                            <TableHead>Item Price</TableHead>
-                                            <TableHead>Time of bid</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody className="sm:text-sm">
-                                        {bidHistory?.data.map((bid, index) => (
-                                            <TableRow
-                                                key={bid.id}
-                                                className={
-                                                    index === 0
-                                                        ? "bg-muted/40"
-                                                        : index % 2 === 0
-                                                            ? "bg-muted/20"
-                                                            : "bg-background"
-                                                }
-                                            >
-                                                <TableCell>{bid.user.username}</TableCell>
-                                                <TableCell>{formatCurrency(bid.displayedAmount)}</TableCell>
-                                                <TableCell>{auction?.highestBidder?.id === bid.user.id ? bid.user.username : '---'}</TableCell>
-                                                <TableCell>{formatCurrency(bid.displayedAmount)}</TableCell>
-                                                <TableCell>
-                                                    {(() => {
-                                                        const bidDate = parseBidTime(bid.bidTime as unknown);
-                                                        return bidDate ? format(bidDate, 'dd/MM/yyyy HH:mm:ss') : '---';
-                                                    })()}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        </div>
+                        <Card className="overflow-hidden shadow-sm">
+                            <CardHeader className="gap-4 border-b bg-muted/30 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="flex h-10 w-10 items-center justify-center rounded-md bg-brand/10 text-brand">
+                                            <History className="h-5 w-5" />
+                                        </span>
+                                        <div>
+                                            <CardTitle className="text-xl">Lịch sử đấu giá</CardTitle>
+                                            <CardDescription>
+                                                {bidHistory?.totalElements ?? 0} lượt bid trong phiên này
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                </div>
+                                <Badge variant="outline" className="w-fit gap-1">
+                                    <TrendingUp className="h-3.5 w-3.5" />
+                                    Giá hiện tại: {formatCurrency(currentPrice)}
+                                </Badge>
+                            </CardHeader>
+
+                            <CardContent className="space-y-5 p-4 sm:p-6">
+                                <div className="grid gap-3 sm:grid-cols-3">
+                                    <div className="rounded-md border bg-background p-4">
+                                        <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Trophy className="h-4 w-4" />
+                                            Người đang dẫn
+                                        </div>
+                                        <p className="truncate text-base font-semibold">{highestBidderName}</p>
+                                    </div>
+                                    <div className="rounded-md border bg-background p-4">
+                                        <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Gavel className="h-4 w-4" />
+                                            Tổng lượt bid
+                                        </div>
+                                        <p className="text-base font-semibold">{bidHistory?.totalElements ?? bidCount}</p>
+                                    </div>
+                                    <div className="rounded-md border bg-background p-4">
+                                        <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Clock className="h-4 w-4" />
+                                            Lượt mới nhất
+                                        </div>
+                                        <p className="truncate text-base font-semibold">{latestBidTime}</p>
+                                    </div>
+                                </div>
+
+                                {bidEntries.length === 0 ? (
+                                    <div className="rounded-md border border-dashed p-8 text-center">
+                                        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                                            <Gavel className="h-6 w-6" />
+                                        </div>
+                                        <p className="font-semibold">Chưa có lượt bid nào</p>
+                                        <p className="mt-1 text-sm text-muted-foreground">
+                                            Giá khởi điểm hiện tại là {formatCurrency(startPrice)}.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="space-y-3 md:hidden">
+                                            {bidEntries.map((bid, index) => {
+                                                const bidderName = getBidderDisplayName(bid);
+                                                const isCurrentLeader =
+                                                    auction.highestBidder?.id === bid.user.id &&
+                                                    Number(bid.displayedAmount) === Number(currentPrice);
+                                                const isMyBid =
+                                                    currentUser?.id === bid.user.id ||
+                                                    currentUser?.username === bid.user.username;
+
+                                                return (
+                                                    <div
+                                                        key={bid.id}
+                                                        className={`rounded-md border p-4 ${isCurrentLeader ? "border-brand/50 bg-brand/5" : "bg-background"}`}
+                                                    >
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <div className="min-w-0">
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <p className="truncate font-semibold">{bidderName}</p>
+                                                                    {isMyBid && <Badge variant="secondary">Bạn</Badge>}
+                                                                    {isCurrentLeader && (
+                                                                        <Badge className="bg-brand text-white hover:bg-brand">Đang dẫn đầu</Badge>
+                                                                    )}
+                                                                </div>
+                                                                <p className="mt-1 text-sm text-muted-foreground">@{bid.user.username}</p>
+                                                            </div>
+                                                            <span className="rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+                                                                #{index + 1}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="mt-4 grid gap-3 text-sm">
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <span className="text-muted-foreground">Giá hiển thị</span>
+                                                                <span className="text-right font-semibold">{formatCurrency(bid.displayedAmount)}</span>
+                                                            </div>
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <span className="text-muted-foreground">Thời điểm</span>
+                                                                <span className="text-right">{formatBidTimestamp(bid.bidTime)}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        <div className="hidden overflow-x-auto rounded-md border md:block">
+                                            <Table className="min-w-[760px]">
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="w-16">#</TableHead>
+                                                        <TableHead>Người trả giá</TableHead>
+                                                        <TableHead>Giá hiển thị</TableHead>
+                                                        <TableHead>Trạng thái</TableHead>
+                                                        <TableHead className="text-right">Thời điểm</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {bidEntries.map((bid, index) => {
+                                                        const bidderName = getBidderDisplayName(bid);
+                                                        const isCurrentLeader =
+                                                            auction.highestBidder?.id === bid.user.id &&
+                                                            Number(bid.displayedAmount) === Number(currentPrice);
+                                                        const isMyBid =
+                                                            currentUser?.id === bid.user.id ||
+                                                            currentUser?.username === bid.user.username;
+
+                                                        return (
+                                                            <TableRow
+                                                                key={bid.id}
+                                                                className={isCurrentLeader ? "bg-brand/5" : undefined}
+                                                            >
+                                                                <TableCell className="font-medium text-muted-foreground">
+                                                                    {index + 1}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <div className="min-w-0">
+                                                                        <div className="flex flex-wrap items-center gap-2">
+                                                                            <span className="font-semibold">{bidderName}</span>
+                                                                            {isMyBid && <Badge variant="secondary">Bạn</Badge>}
+                                                                        </div>
+                                                                        <p className="text-xs text-muted-foreground">@{bid.user.username}</p>
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="font-semibold">
+                                                                    {formatCurrency(bid.displayedAmount)}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {isCurrentLeader ? (
+                                                                        <Badge className="bg-brand text-white hover:bg-brand">Đang dẫn đầu</Badge>
+                                                                    ) : (
+                                                                        <span className="text-muted-foreground">Đã vượt qua</span>
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell className="text-right text-muted-foreground">
+                                                                    {formatBidTimestamp(bid.bidTime)}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    })}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+
+                                        {hasMoreBidHistory && (
+                                            <p className="text-center text-sm text-muted-foreground">
+                                                Đang hiển thị {bidEntries.length} / {bidHistory?.totalElements} lượt gần nhất.
+                                            </p>
+                                        )}
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
                     </TabsContent>
 
                     <TabsContent value="itemInfo" className="mx-auto mt-6 max-w-6xl sm:mt-8">
@@ -475,23 +685,23 @@ export default function Detail() {
                                 <div className="space-y-3 rounded-lg bg-muted p-4 text-sm sm:p-7 sm:text-base">
                                     <div className="grid gap-1 sm:grid-cols-[150px_1fr] sm:gap-4">
                                         <span className="font-semibold text-foreground">Item ID:</span>
-                                        <span className="break-words text-muted-foreground">{product.id}</span>
+                                        <span className="wrap-break-word text-muted-foreground">{product.id}</span>
                                     </div>
                                     <div className="grid gap-1 sm:grid-cols-[150px_1fr] sm:gap-4">
                                         <span className="font-semibold text-foreground">Number of Bids:</span>
-                                        <span className="break-words text-muted-foreground">{bidCount} (High Bidder: {auction.highestBidder?.username || 'N/A'})</span>
+                                        <span className="wrap-break-word text-muted-foreground">{bidCount} (High Bidder: {auction.highestBidder?.username || 'N/A'})</span>
                                     </div>
                                     <div className="grid gap-1 sm:grid-cols-[150px_1fr] sm:gap-4">
                                         <span className="font-semibold text-foreground">Start time:</span>
-                                        <span className="break-words text-muted-foreground">{format(new Date(startTime), 'dd/MM/yyyy HH:mm:ss')}</span>
+                                        <span className="wrap-break-word text-muted-foreground">{format(new Date(startTime), 'dd/MM/yyyy HH:mm:ss')}</span>
                                     </div>
                                     <div className="grid gap-1 sm:grid-cols-[150px_1fr] sm:gap-4">
                                         <span className="font-semibold text-foreground">Ends On:</span>
-                                        <span className="break-words text-muted-foreground">{format(new Date(endTime), 'dd/MM/yyyy HH:mm:ss')}</span>
+                                        <span className="wrap-break-word text-muted-foreground">{format(new Date(endTime), 'dd/MM/yyyy HH:mm:ss')}</span>
                                     </div>
                                     <div className="grid gap-1 sm:grid-cols-[150px_1fr] sm:gap-4">
                                         <span className="font-semibold text-foreground">Seller:</span>
-                                        <span className="break-words text-blue-600">{sellerName}</span>
+                                        <span className="wrap-break-word text-blue-600">{sellerName}</span>
                                     </div>
                                 </div>
                             </div>
@@ -579,7 +789,7 @@ export default function Detail() {
                                             <UserRound className="h-4 w-4" />
                                             Username
                                         </div>
-                                        <p className="break-words font-semibold">{sellerProfile?.username || product.seller.username}</p>
+                                        <p className="wrap-break-word font-semibold">{sellerProfile?.username || product.seller.username}</p>
                                     </div>
                                     <div className="rounded-md border p-4">
                                         <div className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -600,7 +810,7 @@ export default function Detail() {
                                             <Phone className="h-4 w-4" />
                                             Phone
                                         </div>
-                                        <p className="break-words font-semibold">{product.seller.phoneNumber || "--"}</p>
+                                        <p className="wrap-break-word font-semibold">{product.seller.phoneNumber || "--"}</p>
                                     </div>
                                 </div>
 
@@ -609,7 +819,61 @@ export default function Detail() {
                                         <Mail className="h-4 w-4" />
                                         Contact email
                                     </div>
-                                    <p className="break-words font-semibold">{product.seller.email || "--"}</p>
+                                    <p className="wrap-break-word font-semibold">{product.seller.email || "--"}</p>
+                                </div>
+
+                                <div className="rounded-md border p-4">
+                                    <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                            <h3 className="text-base font-semibold">Đánh giá gần đây</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                {sellerFeedbackTotal} đánh giá công khai cho người bán này
+                                            </p>
+                                        </div>
+                                        <Badge variant="outline" className="w-fit gap-1">
+                                            <Star className="h-3.5 w-3.5" />
+                                            {sellerProfile?.reputationScore ?? "--"} điểm uy tín
+                                        </Badge>
+                                    </div>
+
+                                    {isSellerFeedbackLoading ? (
+                                        <div className="flex items-center gap-2 rounded-md bg-muted/40 p-4 text-sm text-muted-foreground">
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Đang tải đánh giá...
+                                        </div>
+                                    ) : sellerFeedbackError ? (
+                                        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+                                            {sellerFeedbackError}
+                                        </div>
+                                    ) : sellerFeedback.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {sellerFeedback.map((feedback) => (
+                                                <div key={feedback.id} className="rounded-md border bg-background p-3">
+                                                    <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                                        <div className="min-w-0">
+                                                            <p className="truncate text-sm font-semibold">@{feedback.fromUsername}</p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                Vai trò: {feedback.reviewAs === "BUYER" ? "Người mua" : "Người bán"}
+                                                            </p>
+                                                        </div>
+                                                        <Badge variant="outline" className={`w-fit ${feedbackRatingClasses[feedback.rating]}`}>
+                                                            {feedbackRatingLabels[feedback.rating]}
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="whitespace-pre-line wrap-break-word text-sm text-muted-foreground">
+                                                        {feedback.comment || "Không có nhận xét."}
+                                                    </p>
+                                                    <p className="mt-2 text-xs text-muted-foreground">
+                                                        {feedback.createdAt ? format(new Date(feedback.createdAt), "dd/MM/yyyy HH:mm") : "--"}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+                                            Người bán này chưa có đánh giá công khai.
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

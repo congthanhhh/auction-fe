@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import AuctionCard from '@/components/auction/AuctionCard';
@@ -11,6 +12,7 @@ import { calculateTimeRemaining } from '@/lib/utils';
 import { useAuctionDetailStore } from '@/stores/auctionDetailStore';
 
 export default function HomePage() {
+    const { t } = useTranslation();
     const [featuredItems, setFeaturedItems] = useState<AuctionSessionResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -26,7 +28,7 @@ export default function HomePage() {
                 setFeaturedItems(response.data ?? []);
             } catch (err) {
                 console.error('Failed to fetch active auctions:', err);
-                setError('Failed to load auction items. Please try again later.');
+                setError(t('home.loadAuctionsError'));
                 setFeaturedItems([]);
             } finally {
                 setLoading(false);
@@ -34,7 +36,7 @@ export default function HomePage() {
         };
 
         fetchActiveAuctions();
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -42,7 +44,6 @@ export default function HomePage() {
                 const response = await categoryService.getCategories(1, 20);
                 setCategories(response.data ?? []);
             } catch (err) {
-                // eslint-disable-next-line no-console
                 console.error('Failed to fetch categories:', err);
                 setCategories([]);
             }
@@ -77,13 +78,13 @@ export default function HomePage() {
                 <div className="py-15 bg-linear-to-r from-brand to-brand-hover dark:from-brand-hover dark:to-brand-hover text-white">
                     <div className="max-w-2xl px-4">
                         <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                            JEWELRY WORTH GIVING OR KEEPING
+                            {t('home.heroTitle')}
                         </h1>
                         <p className="text-xl mb-6">
-                            Discover unique treasures at unbeatable prices
+                            {t('home.heroDescription')}
                         </p>
                         <Button size="lg" className="bg-white text-brand hover:bg-gray-100 font-semibold">
-                            SHOP NOW
+                            {t('home.shopNow')}
                             <ArrowRight className="ml-2 h-5 w-5" />
                         </Button>
                     </div>
@@ -93,16 +94,16 @@ export default function HomePage() {
             {/* Featured Items Section */}
             <div className="container mx-auto px-4 py-12">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold dark:text-white">FEATURED ITEMS</h2>
+                    <h2 className="text-2xl font-bold dark:text-white">{t('home.featuredItems')}</h2>
                     <Link to="/view-all-featured" className="text-brand dark:text-brand hover:underline flex items-center gap-1">
-                        View All Featured Items
+                        {t('home.viewAllFeatured')}
                         <ArrowRight className="h-4 w-4" />
                     </Link>
                 </div>
 
                 {loading ? (
                     <div className="text-center py-12">
-                        <p className="text-gray-500 dark:text-gray-400">Loading auction items...</p>
+                        <p className="text-gray-500 dark:text-gray-400">{t('home.loadingAuctions')}</p>
                     </div>
                 ) : error ? (
                     <div className="text-center py-12">
@@ -110,7 +111,7 @@ export default function HomePage() {
                     </div>
                 ) : featuredItems.length === 0 ? (
                     <div className="text-center py-12">
-                        <p className="text-gray-500 dark:text-gray-400">No active auctions available at the moment.</p>
+                        <p className="text-gray-500 dark:text-gray-400">{t('home.noActiveAuctions')}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -140,9 +141,9 @@ export default function HomePage() {
             <div className="bg-white dark:bg-gray-800 py-10">
                 <div className="container mx-auto px-4">
                     <div className="flex flex-col justify-center items-center mb-6">
-                        <h2 className="text-2xl font-bold dark:text-white">SHOP TOP CATEGORIES</h2>
+                        <h2 className="text-2xl font-bold dark:text-white">{t('home.topCategories')}</h2>
                         <Link to="/categories" className="text-brand dark:text-brand hover:underline flex items-center gap-1">
-                            View All Categories
+                            {t('home.viewAllCategories')}
                             <ArrowRight className="h-4 w-4" />
                         </Link>
                     </div>
@@ -176,14 +177,14 @@ export default function HomePage() {
                             <div className="flex justify-center mb-2">
                                 <Truck className="h-12 w-12 text-brand dark:text-brand" />
                             </div>
-                            <CardTitle className="text-2xl">1¢ Shipping</CardTitle>
+                            <CardTitle className="text-2xl">{t('home.shippingTitle')}</CardTitle>
                             <CardDescription className="text-base dark:text-gray-300">
-                                Don't let shipping keep you from taking home amazing items
+                                {t('home.shippingDescription')}
                             </CardDescription>
                         </CardHeader>
                         <CardFooter className="justify-center">
                             <Button variant="outline" className="border-brand text-brand hover:bg-brand hover:text-white dark:border-brand dark:text-brand">
-                                Shop 1¢ Shipping Items
+                                {t('home.shippingButton')}
                             </Button>
                         </CardFooter>
                     </Card>
@@ -194,14 +195,14 @@ export default function HomePage() {
                             <div className="flex justify-center mb-2">
                                 <Zap className="h-12 w-12 text-green-600 dark:text-green-400" />
                             </div>
-                            <CardTitle className="text-2xl">Buy It Now</CardTitle>
+                            <CardTitle className="text-2xl">{t('home.buyNowTitle')}</CardTitle>
                             <CardDescription className="text-base dark:text-gray-300">
-                                Browse items available for purchase today. No bidding!
+                                {t('home.buyNowDescription')}
                             </CardDescription>
                         </CardHeader>
                         <CardFooter className="justify-center">
                             <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white dark:border-green-500 dark:text-green-400">
-                                Shop Buy It Now Items
+                                {t('home.buyNowButton')}
                             </Button>
                         </CardFooter>
                     </Card>
@@ -212,14 +213,14 @@ export default function HomePage() {
                             <div className="flex justify-center mb-2">
                                 <Clock className="h-12 w-12 text-red-600 dark:text-red-400" />
                             </div>
-                            <CardTitle className="text-2xl">Last Chance</CardTitle>
+                            <CardTitle className="text-2xl">{t('home.lastChanceTitle')}</CardTitle>
                             <CardDescription className="text-base dark:text-gray-300">
-                                Limited time remaining – Hurry Up!
+                                {t('home.lastChanceDescription')}
                             </CardDescription>
                         </CardHeader>
                         <CardFooter className="justify-center">
                             <Button variant="outline" className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white dark:border-red-500 dark:text-red-400">
-                                Shop Last Chance Items
+                                {t('home.lastChanceButton')}
                             </Button>
                         </CardFooter>
                     </Card>
@@ -230,16 +231,16 @@ export default function HomePage() {
             <div className="bg-white dark:bg-gray-800 py-12">
                 <div className="container mx-auto px-4">
                     <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold dark:text-white">RECOMMENDED FOR YOU</h2>
+                        <h2 className="text-2xl font-bold dark:text-white">{t('home.recommended')}</h2>
                         <Link to="/recommended" className="text-brand dark:text-brand hover:underline flex items-center gap-1">
-                            View All Recommended
+                            {t('home.viewAllRecommended')}
                             <ArrowRight className="h-4 w-4" />
                         </Link>
                     </div>
 
                     {loading ? (
                         <div className="text-center py-12">
-                            <p className="text-gray-500 dark:text-gray-400">Loading recommendations...</p>
+                            <p className="text-gray-500 dark:text-gray-400">{t('home.loadingRecommendations')}</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

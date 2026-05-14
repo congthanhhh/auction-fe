@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,8 +11,10 @@ import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react"
 import { ForgotPasswordDialog, ResetPasswordDialog } from "@/components/auth"
 import { useAuthStore } from "@/stores/authStore"
 import type { AuthenticationRequest } from "@/types/auth"
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher"
 
 export const SignIn = () => {
+    const { t } = useTranslation()
     const navigate = useNavigate()
     const location = useLocation()
     const { login, redirectToGoogleLogin, isLoading, error, clearError, isAuthenticated, setError } = useAuthStore()
@@ -84,7 +87,7 @@ export const SignIn = () => {
     }
 
     const handleResetPasswordSuccess = () => {
-        setPasswordResetMessage("Mật khẩu đã được đặt lại. Vui lòng đăng nhập bằng mật khẩu mới.")
+        setPasswordResetMessage(t("auth.signIn.resetSuccess"))
     }
 
     return (
@@ -92,9 +95,12 @@ export const SignIn = () => {
             {/* Header */}
             <div className="border-b-4 border-brand2 bg-white dark:bg-gray-900 shadow-sm">
                 <div className="container mx-auto px-4 py-5">
-                    <Link to="/" className="text-4xl font-bold text-brand2 dark:text-brand whitespace-nowrap hover:text-brand transition-colors">
-                        Auction Shop Online
-                    </Link>
+                    <div className="flex items-center justify-between gap-4">
+                        <Link to="/" className="text-4xl font-bold text-brand2 dark:text-brand whitespace-nowrap hover:text-brand transition-colors">
+                            {t("common.appNameLong")}
+                        </Link>
+                        <LanguageSwitcher />
+                    </div>
                 </div>
             </div>
 
@@ -117,9 +123,9 @@ export const SignIn = () => {
             <div className="flex-1 flex items-center justify-center p-4">
                 <Card className="w-full max-w-md">
                     <CardHeader className="space-y-1">
-                        <CardTitle className="text-2xl font-bold text-center text-brand2">Đăng nhập</CardTitle>
+                        <CardTitle className="text-2xl font-bold text-center text-brand2">{t("auth.signIn.title")}</CardTitle>
                         <CardDescription className="text-center text-brand">
-                            Nhập username và mật khẩu để đăng nhập vào tài khoản
+                            {t("auth.signIn.description")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -140,11 +146,11 @@ export const SignIn = () => {
                             )}
 
                             <div className="space-y-2 text-brand2">
-                                <Label htmlFor="usernameOrEmail">Username hoặc Email</Label>
+                                <Label htmlFor="usernameOrEmail">{t("auth.signIn.usernameOrEmail")}</Label>
                                 <Input
                                     id="usernameOrEmail"
                                     type="text"
-                                    placeholder="username hoặc email"
+                                    placeholder={t("auth.signIn.usernameOrEmailPlaceholder")}
                                     value={usernameOrEmail}
                                     onChange={(e) => setUsernameOrEmail(e.target.value)}
                                     disabled={isLoading}
@@ -153,7 +159,7 @@ export const SignIn = () => {
                             </div>
                             <div className="space-y-2 text-brand2">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="password">Mật khẩu</Label>
+                                    <Label htmlFor="password">{t("auth.signIn.password")}</Label>
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -163,7 +169,7 @@ export const SignIn = () => {
                                         className="text-sm text-brand hover:text-brand-hover hover:underline"
                                         disabled={isLoading}
                                     >
-                                        Quên mật khẩu?
+                                        {t("auth.signIn.forgotPassword")}
                                     </button>
                                 </div>
                                 <div className="relative">
@@ -204,7 +210,7 @@ export const SignIn = () => {
                                     htmlFor="remember"
                                     className="text-sm font-normal cursor-pointer text-brand"
                                 >
-                                    Ghi nhớ đăng nhập
+                                    {t("auth.signIn.rememberMe")}
                                 </Label>
                             </div>
                             <Button
@@ -215,10 +221,10 @@ export const SignIn = () => {
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Đang đăng nhập...
+                                        {t("auth.signIn.submitting")}
                                     </>
                                 ) : (
-                                    'Đăng nhập'
+                                    t("auth.signIn.submit")
                                 )}
                             </Button>
                         </form>
@@ -226,7 +232,7 @@ export const SignIn = () => {
                         <div className="relative my-6">
                             <Separator />
                             <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-gray-950 px-2 text-xs text-gray-500">
-                                HOẶC
+                                {t("auth.signIn.divider")}
                             </span>
                         </div>
 
@@ -256,19 +262,19 @@ export const SignIn = () => {
                                         fill="#EA4335"
                                     />
                                 </svg>
-                                Đăng nhập với Google
+                                {t("auth.signIn.google")}
                             </Button>
                         </div>
                     </CardContent>
                     <CardFooter className="flex flex-col space-y-4">
                         <Separator />
                         <div className="text-sm text-center text-gray-600 dark:text-gray-400">
-                            Chưa có tài khoản?{" "}
+                            {t("auth.signIn.noAccount")}{" "}
                             <Link
                                 to="/signup"
                                 className="text-brand hover:text-brand-hover hover:underline font-medium"
                             >
-                                Đăng ký ngay
+                                {t("auth.signIn.signUpNow")}
                             </Link>
                         </div>
                     </CardFooter>
@@ -278,7 +284,7 @@ export const SignIn = () => {
             {/* Footer */}
             <div className="border-t py-6 bg-gray-900 text-white mt-auto">
                 <div className="container mx-auto px-4 text-center text-sm dark:text-gray-400">
-                    © 2026 Auction Shop Online. All rights reserved.
+                    © 2026 {t("common.appNameLong")}. {t("footer.copyright").replace("© 2026 AuctionSite. ", "")}
                 </div>
 
                 {/* Forgot Password Dialog */}

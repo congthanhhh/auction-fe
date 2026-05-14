@@ -1,4 +1,5 @@
 import type React from "react";
+import { useTranslation } from "react-i18next";
 import {
     Pagination,
     PaginationContent,
@@ -14,6 +15,7 @@ interface SimplePaginationProps {
 }
 
 export function SimplePagination({ page, totalPages, onPageChange }: SimplePaginationProps) {
+    const { t } = useTranslation();
     const canGoPrev = page > 1;
     const canGoNext = page < totalPages;
 
@@ -45,7 +47,7 @@ export function SimplePagination({ page, totalPages, onPageChange }: SimplePagin
                 </PaginationItem>
                 <PaginationItem>
                     <span className="px-3 text-xs text-muted-foreground">
-                        Trang {page} / {totalPages}
+                        {t("common.pageOf", { page, totalPages })}
                     </span>
                 </PaginationItem>
                 <PaginationItem>

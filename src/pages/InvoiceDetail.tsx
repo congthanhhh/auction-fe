@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import InvoiceDetail from "@/components/invoice/Detail";
 import type { DisputeRequest, DisputeResponse, InvoiceResponse, ShipInvoiceRequest } from "@/types/invoice";
 import { addressService } from "@/services/addressService";
@@ -7,6 +8,8 @@ import type { AddressResponse } from "@/types/user";
 import { paymentService } from "@/services/paymentService";
 import { invoiceService } from "@/services/invoiceService";
 import { useAuthStore } from "@/stores/authStore";
+import { feedbackService } from "@/services/feedbackService";
+import type { FeedbackRequest } from "@/types/feedback";
 
 interface LocationState {
     invoice?: InvoiceResponse;
@@ -29,6 +32,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
 };
 
 export default function InvoiceDetailPage() {
+    const { t } = useTranslation();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
@@ -66,14 +70,14 @@ export default function InvoiceDetailPage() {
                 setInvoice(fetched);
             } catch (error: unknown) {
                 console.error("Failed to load invoice detail:", error);
-                setInvoiceError(getErrorMessage(error, "Không tải được chi tiết hoá đơn."));
+                setInvoiceError(getErrorMessage(error, t("invoice.detail.loadError")));
             } finally {
                 setIsLoadingInvoice(false);
             }
         };
 
         fetchInvoice();
-    }, [id, locationState?.invoice]);
+    }, [id, locationState?.invoice, t]);
 
     useEffect(() => {
         let isMounted = true;
@@ -97,7 +101,7 @@ export default function InvoiceDetailPage() {
                 console.error("Failed to load dispute detail:", error);
                 if (isMounted) {
                     setDispute(null);
-                    setDisputeError("Không tải được lý do khiếu nại.");
+                    setDisputeError(t("invoice.detail.disputeLoadError"));
                 }
             } finally {
                 if (isMounted) {
@@ -111,7 +115,7 @@ export default function InvoiceDetailPage() {
         return () => {
             isMounted = false;
         };
-    }, [invoice]);
+    }, [invoice, t]);
 
     useEffect(() => {
         const fetchAddresses = async () => {
@@ -138,7 +142,7 @@ export default function InvoiceDetailPage() {
         if (!invoice) return;
 
         if (!selectedAddress) {
-            alert("Vui lòng chọn địa chỉ nhận hàng trước khi thanh toán.");
+            alert(t("invoice.detail.selectAddressFirst"));
             return;
         }
 
@@ -151,7 +155,7 @@ export default function InvoiceDetailPage() {
             }
         } catch (error: unknown) {
             console.error("Failed to create VNPay payment:", error);
-            alert(getErrorMessage(error, "Không tạo được liên kết thanh toán VNPay. Vui lòng thử lại."));
+            alert(getErrorMessage(error, t("invoice.detail.createPaymentError")));
         } finally {
             setIsPaying(false);
         }
@@ -173,7 +177,7 @@ export default function InvoiceDetailPage() {
             setInvoice(updatedInvoice);
         } catch (error: unknown) {
             console.error("Failed to ship invoice:", error);
-            alert(getErrorMessage(error, "Không thể xác nhận gửi hàng. Vui lòng thử lại."));
+            alert(getErrorMessage(error, t("invoice.detail.shipError")));
         }
     };
 
@@ -185,7 +189,7 @@ export default function InvoiceDetailPage() {
             setInvoice(updatedInvoice);
         } catch (error: unknown) {
             console.error("Failed to confirm invoice:", error);
-            alert(getErrorMessage(error, "Không thể xác nhận nhận hàng. Vui lòng thử lại."));
+            alert(getErrorMessage(error, t("invoice.detail.confirmReceiveError")));
         }
     };
 
@@ -199,7 +203,7 @@ export default function InvoiceDetailPage() {
             setDispute(disputeResponse);
         } catch (error: unknown) {
             console.error("Failed to dispute invoice:", error);
-            alert(getErrorMessage(error, "Không thể gửi khiếu nại. Vui lòng thử lại."));
+            alert(getErrorMessage(error, t("invoice.detail.disputeError")));
         }
     };
 
@@ -211,18 +215,30 @@ export default function InvoiceDetailPage() {
             setInvoice(updatedInvoice);
         } catch (error: unknown) {
             console.error("Failed to report nonpayment:", error);
-            alert(getErrorMessage(error, "Không thể báo cáo đơn hàng. Vui lòng thử lại."));
+            alert(getErrorMessage(error, t("invoice.detail.reportError")));
         }
     };
+    const handleCreateFeedback = async (payload: FeedbackRequest) => {
+        if (!invoice) return;
+        try {
+            await feedbackService.createFeedback(invoice.id, payload);
+            const updatedInvoice = await invoiceService.getInvoiceById(invoice.id);
+            setInvoice(updatedInvoice);
+        } catch (error: unknown) {
+            console.error("Failed to create feedback:", error);
+            alert(getErrorMessage(error, t("invoice.detail.feedbackError")));
+        }
+    };
+
     if (isLoadingInvoice) {
         return (
             <div className="bg-gray-50 dark:bg-gray-950 py-8">
                 <div className="container mx-auto px-4 max-w-3xl space-y-4">
                     <h1 className="text-2xl font-bold text-brand2 dark:text-white">
-                        Chi tiết đơn hàng
+                        {t("invoice.detail.title")}
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Đang tải thông tin hoá đơn...
+                        {t("invoice.detail.loading")}
                     </p>
                 </div>
             </div>
@@ -234,7 +250,7 @@ export default function InvoiceDetailPage() {
             <div className="bg-gray-50 dark:bg-gray-950 py-8">
                 <div className="container mx-auto px-4 max-w-3xl space-y-4">
                     <h1 className="text-2xl font-bold text-brand2 dark:text-white">
-                        Chi tiết đơn hàng
+                        {t("invoice.detail.title")}
                     </h1>
                     <p className="text-sm text-red-600">
                         {invoiceError}
@@ -244,7 +260,7 @@ export default function InvoiceDetailPage() {
                         onClick={() => navigate("/my-invoices")}
                         className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground"
                     >
-                        Quay lại danh sách đơn hàng
+                        {t("invoice.detail.backToOrders")}
                     </button>
                 </div>
             </div>
@@ -256,17 +272,17 @@ export default function InvoiceDetailPage() {
             <div className="bg-gray-50 dark:bg-gray-950 py-8">
                 <div className="container mx-auto px-4 max-w-3xl space-y-4">
                     <h1 className="text-2xl font-bold text-brand2 dark:text-white">
-                        Chi tiết đơn hàng
+                        {t("invoice.detail.title")}
                     </h1>
                     <p className="text-sm text-red-600">
-                        Không tìm thấy thông tin hóa đơn. Vui lòng truy cập lại từ danh sách "Đơn hàng của tôi".
+                        {t("invoice.detail.notFound")}
                     </p>
                     <button
                         type="button"
                         onClick={() => navigate("/my-invoices")}
                         className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground"
                     >
-                        Quay lại danh sách đơn hàng
+                        {t("invoice.detail.backToOrders")}
                     </button>
                 </div>
             </div>
@@ -277,7 +293,7 @@ export default function InvoiceDetailPage() {
         <div className="bg-gray-50 dark:bg-gray-950 py-8">
             <div className="container mx-auto px-4 max-w-4xl space-y-4">
                 <h1 className="text-2xl font-bold text-brand2 dark:text-white">
-                    Chi tiết đơn hàng
+                    {t("invoice.detail.title")}
                 </h1>
                 <InvoiceDetail
                     invoice={invoice}
@@ -292,6 +308,7 @@ export default function InvoiceDetailPage() {
                     onConfirmReceive={handleConfirmReceive}
                     onDispute={handleDispute}
                     onReportNonpayment={handleReportNonpayment}
+                    onCreateFeedback={handleCreateFeedback}
                     dispute={dispute}
                     isLoadingDispute={isLoadingDispute}
                     disputeError={disputeError}

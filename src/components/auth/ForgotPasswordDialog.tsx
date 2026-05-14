@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
     Dialog,
     DialogContent,
@@ -20,6 +21,7 @@ interface ForgotPasswordDialogProps {
 }
 
 export function ForgotPasswordDialog({ open, onOpenChange, onOtpSent }: ForgotPasswordDialogProps) {
+    const { t } = useTranslation()
     const [email, setEmail] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -32,21 +34,21 @@ export function ForgotPasswordDialog({ open, onOpenChange, onOtpSent }: ForgotPa
 
         const trimmedEmail = email.trim()
         if (!trimmedEmail) {
-            setError("Vui lòng nhập email")
+            setError(t("auth.forgotPassword.emailRequired"))
             return
         }
 
         try {
             setIsSubmitting(true)
             const response = await authService.forgotPassword({ email: trimmedEmail })
-            setInfoMessage(response.message || "Đã gửi mã OTP tới email của bạn")
+            setInfoMessage(response.message || t("auth.forgotPassword.success"))
             setTimeout(() => {
                 onOpenChange(false)
                 onOtpSent?.(trimmedEmail)
                 setInfoMessage(null)
             }, 400)
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Gửi mã OTP thất bại"
+            const message = err instanceof Error ? err.message : t("auth.forgotPassword.error")
             setError(message)
         } finally {
             setIsSubmitting(false)
@@ -72,9 +74,9 @@ export function ForgotPasswordDialog({ open, onOpenChange, onOtpSent }: ForgotPa
         >
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle className="text-brand2">Quên mật khẩu</DialogTitle>
+                    <DialogTitle className="text-brand2">{t("auth.forgotPassword.title")}</DialogTitle>
                     <DialogDescription>
-                        Nhập email của bạn để nhận mã xác thực OTP
+                        {t("auth.forgotPassword.description")}
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit}>
@@ -90,7 +92,7 @@ export function ForgotPasswordDialog({ open, onOpenChange, onOtpSent }: ForgotPa
                         )}
                         <div className="space-y-2">
                             <Label htmlFor="email" className="text-brand2">
-                                Email <span className="text-red-500">*</span>
+                                {t("auth.forgotPassword.email")} <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="email"
@@ -102,7 +104,7 @@ export function ForgotPasswordDialog({ open, onOpenChange, onOtpSent }: ForgotPa
                                 required
                             />
                             <p className="text-xs text-gray-500">
-                                Chúng tôi sẽ gửi mã OTP đến email này
+                                {t("auth.forgotPassword.emailHint")}
                             </p>
                         </div>
                     </div>
@@ -113,11 +115,11 @@ export function ForgotPasswordDialog({ open, onOpenChange, onOtpSent }: ForgotPa
                             onClick={handleClose}
                             disabled={isSubmitting}
                         >
-                            Hủy
+                            {t("auth.forgotPassword.cancel")}
                         </Button>
                         <Button type="submit" className="bg-brand hover:bg-brand-hover" disabled={isSubmitting}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {isSubmitting ? "Đang gửi..." : "Gửi mã OTP"}
+                            {isSubmitting ? t("auth.forgotPassword.submitting") : t("auth.forgotPassword.submit")}
                         </Button>
                     </DialogFooter>
                 </form>

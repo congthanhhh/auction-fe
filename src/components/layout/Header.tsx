@@ -26,15 +26,18 @@ import {
 } from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
 import { categoryService } from '@/services/categoryService';
 import type { CategoryResponse } from '@/types/auction';
 import { NotificationBell } from './NotificationBell';
 import { useRequireAuth } from '@/hooks/use-require-auth';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 export default function Header() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { t } = useTranslation();
     const { isAuthenticated, user, logoutWithApi } = useAuthStore();
     const requireAuth = useRequireAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -68,17 +71,16 @@ export default function Header() {
                 const response = await categoryService.getCategories(1, 50);
                 setCategories(response.data ?? []);
             } catch (err) {
-                // eslint-disable-next-line no-console
                 console.error('Failed to fetch categories in header:', err);
                 setCategories([]);
-                setCategoryError('Không tải được danh mục');
+                setCategoryError(t('navigation.categoryLoadError'));
             } finally {
                 setIsLoadingCategories(false);
             }
         };
 
         fetchCategories();
-    }, []);
+    }, [t]);
 
     // Get user initials for avatar
     const getUserInitials = () => {
@@ -95,7 +97,7 @@ export default function Header() {
                     <div className="flex items-center justify-between">
                         {/* Logo */}
                         <Link to="/" className="text-2xl font-bold text-brand2 dark:text-brand whitespace-nowrap">
-                            AuctionShop
+                            {t('common.appName')}
                         </Link>
 
                         {/* Search Bar - chiếm phần lớn không gian */}
@@ -103,7 +105,7 @@ export default function Header() {
                             <div className='relative'>
                                 <Input
                                     type="text"
-                                    placeholder="Search for items..."
+                                    placeholder={t('navigation.searchPlaceholder')}
                                     className="pr-12 rounded-full"
                                 />
                                 <Button
@@ -118,6 +120,7 @@ export default function Header() {
                         {/* Right Actions */}
                         <div className="flex items-center gap-2">
                             <ThemeToggle />
+                            <LanguageSwitcher />
                             {isAuthenticated ? (
                                 <>
                                     <NotificationBell />
@@ -146,7 +149,7 @@ export default function Header() {
                                             <DropdownMenuItem asChild>
                                                 <Link to="/profile" className="cursor-pointer">
                                                     <User className="mr-2 h-4 w-4" />
-                                                    Profile
+                                                    {t('navigation.profile')}
                                                 </Link>
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
@@ -157,7 +160,7 @@ export default function Header() {
                                                 className="cursor-pointer text-red-600 focus:text-red-600"
                                             >
                                                 <LogOut className="mr-2 h-4 w-4" />
-                                                Logout
+                                                {t('navigation.logout')}
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -166,7 +169,7 @@ export default function Header() {
                                 <Link to={signInHref}>
                                     <Button className="bg-brand font-bold hover:bg-brand-hover dark:bg-brand-hover dark:hover:bg-brand">
                                         <User />
-                                        Sign In
+                                        {t('navigation.signIn')}
                                     </Button>
                                 </Link>
                             )}
@@ -182,7 +185,7 @@ export default function Header() {
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button className="text-white bg-brand2 uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center gap-2 text-lg font-semibold w-full">
-                                        Category
+                                        {t('navigation.category')}
                                         <ChevronDown className="h-4 w-4" />
                                     </button>
                                 </DropdownMenuTrigger>
@@ -190,7 +193,7 @@ export default function Header() {
                                     <ScrollArea className="">
                                         {isLoadingCategories && (
                                             <DropdownMenuItem disabled className="px-4 py-2 text-base">
-                                                Loading categories...
+                                                {t('navigation.loadingCategories')}
                                             </DropdownMenuItem>
                                         )}
                                         {!isLoadingCategories && categoryError && (
@@ -200,7 +203,7 @@ export default function Header() {
                                         )}
                                         {!isLoadingCategories && !categoryError && categories.length === 0 && (
                                             <DropdownMenuItem disabled className="px-4 py-2 text-base">
-                                                No categories found
+                                                {t('navigation.noCategories')}
                                             </DropdownMenuItem>
                                         )}
                                         {!isLoadingCategories && !categoryError && categories.map((category) => (
@@ -220,7 +223,7 @@ export default function Header() {
                                 to="/view-all-featured"
                                 className="bg-brand2 text-white uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center text-lg font-semibold"
                             >
-                                Feature
+                                {t('navigation.feature')}
                             </Link>
 
                             {/* Newly List */}
@@ -228,14 +231,14 @@ export default function Header() {
                                 to="#"
                                 className="bg-brand2 text-white uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center text-lg font-semibold"
                             >
-                                Newly List
+                                {t('navigation.newlyList')}
                             </Link>
 
                             {/* My Auction - DropdownMenu */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button className="text-white bg-brand2 uppercase tracking-widest py-3 border-r border-white/20 hover:bg-brand transition-colors flex items-center justify-center gap-2 text-lg font-semibold w-full">
-                                        My Auction
+                                        {t('navigation.myAuction')}
                                         <ChevronDown className="h-4 w-4" />
                                     </button>
                                 </DropdownMenuTrigger>
@@ -252,7 +255,7 @@ export default function Header() {
                                                     }
                                                 }}
                                             >
-                                                My Profile
+                                                {t('navigation.myProfile')}
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
@@ -266,7 +269,7 @@ export default function Header() {
                                                     }
                                                 }}
                                             >
-                                                My Joined Auctions
+                                                {t('navigation.myJoinedAuctions')}
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
@@ -280,7 +283,7 @@ export default function Header() {
                                                     }
                                                 }}
                                             >
-                                                My Auction Sessions
+                                                {t('navigation.myAuctionSessions')}
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
@@ -294,7 +297,7 @@ export default function Header() {
                                                     }
                                                 }}
                                             >
-                                                My Orders
+                                                {t('navigation.myOrders')}
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
@@ -308,7 +311,7 @@ export default function Header() {
                                                     }
                                                 }}
                                             >
-                                                My Sales
+                                                {t('navigation.mySales')}
                                             </Link>
                                         </DropdownMenuItem>
                                     </ScrollArea>
@@ -320,7 +323,7 @@ export default function Header() {
                                 to="/stories"
                                 className="bg-brand2 text-white uppercase tracking-widest py-3 hover:bg-brand transition-colors flex items-center justify-center text-lg font-semibold"
                             >
-                                Stories
+                                {t('navigation.stories')}
                             </Link>
                         </nav>
                     </div>
@@ -340,7 +343,7 @@ export default function Header() {
                             </SheetTrigger>
                             <SheetContent side="left" className="w-80">
                                 <SheetHeader>
-                                    <SheetTitle>Menu</SheetTitle>
+                                    <SheetTitle>{t('navigation.menu')}</SheetTitle>
                                 </SheetHeader>
                                 <div className="flex flex-col gap-4 mt-6">
                                     {/* User Section */}
@@ -362,7 +365,7 @@ export default function Header() {
                                             <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
                                                 <Button variant="outline" className="w-full text-lg justify-start">
                                                     <User className="mr-2 h-4 w-4" />
-                                                    Profile
+                                                    {t('navigation.profile')}
                                                 </Button>
                                             </Link>
                                             <Button
@@ -374,14 +377,14 @@ export default function Header() {
                                                 }}
                                             >
                                                 <LogOut className="mr-2 h-4 w-4" />
-                                                Logout
+                                                {t('navigation.logout')}
                                             </Button>
                                         </div>
                                     ) : (
                                         <Link to={signInHref} onClick={() => setMobileMenuOpen(false)}>
                                             <Button className="w-full bg-brand text-lg hover:bg-brand-hover">
                                                 <User className="mr-2" />
-                                                Sign In
+                                                {t('navigation.signIn')}
                                             </Button>
                                         </Link>
                                     )}
@@ -392,14 +395,14 @@ export default function Header() {
                                         <Collapsible open={categoryOpen} onOpenChange={setCategoryOpen}>
                                             <CollapsibleTrigger asChild>
                                                 <Button variant="outline" className="w-full text-lg justify-between">
-                                                    <p>Category</p>
+                                                    <p>{t('navigation.category')}</p>
                                                     <ChevronDown className={`h-4 w-4 transition-transform ${categoryOpen ? 'rotate-180' : ''}`} />
                                                 </Button>
                                             </CollapsibleTrigger>
                                             <CollapsibleContent className="mt-2 space-y-1">
                                                 {isLoadingCategories && (
                                                     <p className="px-4 py-2 text-sm text-muted-foreground">
-                                                        Loading categories...
+                                                        {t('navigation.loadingCategories')}
                                                     </p>
                                                 )}
                                                 {!isLoadingCategories && categoryError && (
@@ -409,7 +412,7 @@ export default function Header() {
                                                 )}
                                                 {!isLoadingCategories && !categoryError && categories.length === 0 && (
                                                     <p className="px-4 py-2 text-sm text-muted-foreground">
-                                                        No categories found
+                                                        {t('navigation.noCategories')}
                                                     </p>
                                                 )}
                                                 {!isLoadingCategories && !categoryError && categories.map((category) => (
@@ -426,18 +429,18 @@ export default function Header() {
                                         </Collapsible>
 
                                         <Link to="/feature" onClick={() => setMobileMenuOpen(false)}>
-                                            <Button variant="outline" className='w-full text-lg justify-start'>Feature</Button>
+                                            <Button variant="outline" className='w-full text-lg justify-start'>{t('navigation.feature')}</Button>
                                         </Link>
 
                                         <Link to="/newly-list" onClick={() => setMobileMenuOpen(false)}>
-                                            <Button variant="outline" className='w-full text-lg justify-start'>Newly List</Button>
+                                            <Button variant="outline" className='w-full text-lg justify-start'>{t('navigation.newlyList')}</Button>
                                         </Link>
 
                                         {/* My Auction - Collapsible */}
                                         <Collapsible open={myShopOpen} onOpenChange={setMyShopOpen}>
                                             <CollapsibleTrigger asChild>
                                                 <Button variant="outline" className="w-full text-lg justify-between">
-                                                    My Auction
+                                                    {t('navigation.myAuction')}
                                                     <ChevronDown className={`h-4 w-4 transition-transform ${myShopOpen ? 'rotate-180' : ''}`} />
                                                 </Button>
                                             </CollapsibleTrigger>
@@ -450,7 +453,7 @@ export default function Header() {
                                                     }}
                                                     className="block px-4 py-2 text-lg hover:bg-accent rounded-md"
                                                 >
-                                                    My Joined Auctions
+                                                    {t('navigation.myJoinedAuctions')}
                                                 </Link>
                                                 <Link
                                                     to="/my-sessions"
@@ -460,7 +463,7 @@ export default function Header() {
                                                     }}
                                                     className="block px-4 py-2 text-lg hover:bg-accent rounded-md"
                                                 >
-                                                    My Auction Sessions
+                                                    {t('navigation.myAuctionSessions')}
                                                 </Link>
                                                 <Link
                                                     to="/my-invoices"
@@ -470,7 +473,7 @@ export default function Header() {
                                                     }}
                                                     className="block px-4 py-2 text-lg hover:bg-accent rounded-md"
                                                 >
-                                                    My Orders
+                                                    {t('navigation.myOrders')}
                                                 </Link>
                                                 <Link
                                                     to="/my-sales"
@@ -480,14 +483,14 @@ export default function Header() {
                                                     }}
                                                     className="block px-4 py-2 text-lg hover:bg-accent rounded-md"
                                                 >
-                                                    My Sales
+                                                    {t('navigation.mySales')}
                                                 </Link>
                                             </CollapsibleContent>
                                         </Collapsible>
 
                                         <Link to="/stories" onClick={() => setMobileMenuOpen(false)}>
                                             <Button variant="outline" className="w-full text-lg justify-start">
-                                                Stories
+                                                {t('navigation.stories')}
                                             </Button>
                                         </Link>
                                     </div>
@@ -497,7 +500,7 @@ export default function Header() {
 
                         {/* Logo (Center) */}
                         <Link to="/" className="absolute left-1/2 transform -translate-x-1/2 text-xl font-bold text-brand dark:text-brand whitespace-nowrap">
-                            AuctionShop
+                            {t('common.appName')}
                         </Link>
 
                         {/* Right Actions */}
@@ -512,6 +515,7 @@ export default function Header() {
                             </Button>
                             {isAuthenticated && <NotificationBell />}
                             <ThemeToggle />
+                            <LanguageSwitcher />
                         </div>
                     </div>
 
@@ -521,7 +525,7 @@ export default function Header() {
                             <div className="relative">
                                 <Input
                                     type="text"
-                                    placeholder="Search for items..."
+                                    placeholder={t('navigation.searchPlaceholder')}
                                     className="pr-12 rounded-full"
                                     autoFocus
                                 />
