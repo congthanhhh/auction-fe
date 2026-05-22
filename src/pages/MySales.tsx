@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import InvoiceList from "@/components/invoice/InvoiceList";
 import { invoiceService } from "@/services/invoiceService";
-import type { InvoicePageResponse, InvoiceStatus, InvoiceType } from "@/types/invoice";
+import type { InvoicePageResponse, InvoiceStatus, InvoiceType, SellerRevenueResponse } from "@/types/invoice";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SimplePagination } from "@/components/common/SimplePagination";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Store } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
+import { Receipt, Store, Wallet } from "lucide-react";
 import { invoiceStatusLabelKeys, invoiceTypeLabelKeys } from "@/types/invoice-labels";
 
 export default function MySales() {
@@ -15,6 +16,7 @@ export default function MySales() {
     const requireAuth = useRequireAuth();
 
     const [pageData, setPageData] = useState<InvoicePageResponse | null>(null);
+    const [sellerStats, setSellerStats] = useState<SellerRevenueResponse | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -42,15 +44,21 @@ export default function MySales() {
                     status: statusFilter === "ALL" ? undefined : statusFilter,
                 };
 
-                const response =
+                const salesRequest =
                     typeFilter === "LISTING_FEE"
-                        ? await invoiceService.getMyListingFees(params)
+                        ? invoiceService.getMyListingFees(params)
                         : typeFilter === "AUCTION_SALE"
-                            ? await invoiceService.getMySales(params)
-                            : await invoiceService.getSoldInvoices(params);
+                            ? invoiceService.getMySales(params)
+                            : invoiceService.getSoldInvoices(params);
+
+                const [response, stats] = await Promise.all([
+                    salesRequest,
+                    invoiceService.getSellerStats(),
+                ]);
 
                 if (isMounted) {
                     setPageData(response);
+                    setSellerStats(stats);
                 }
             } catch (err) {
                 if (!isMounted) return;
@@ -80,7 +88,9 @@ export default function MySales() {
         { value: "SHIPPING", label: t(invoiceStatusLabelKeys.SHIPPING) },
         { value: "COMPLETED", label: t(invoiceStatusLabelKeys.COMPLETED) },
         { value: "DISPUTE", label: t(invoiceStatusLabelKeys.DISPUTE) },
-        { value: "CANCELLED_NON_PAYMENT", label: t("invoice.list.cancelled") },
+        { value: "CANCELLED_NON_PAYMENT", label: t(invoiceStatusLabelKeys.CANCELLED_NON_PAYMENT) },
+        { value: "CANCELLED_BY_SELLER", label: t(invoiceStatusLabelKeys.CANCELLED_BY_SELLER) },
+        { value: "REFUNDED", label: t(invoiceStatusLabelKeys.REFUNDED) },
     ];
 
     const typeFilterOptions: { value: "ALL" | InvoiceType; label: string }[] = [
@@ -115,9 +125,30 @@ export default function MySales() {
                             </div>
                         </div>
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                            <div className="rounded-md border bg-slate-50 px-4 py-2 text-sm dark:bg-gray-950">
-                                <span className="text-muted-foreground">{t("invoice.list.totalSales")}</span>
-                                <span className="font-semibold text-foreground">{totalElements}</span>
+                            <div className="grid gap-2 sm:grid-cols-3">
+                                <div className="flex items-center gap-2 rounded-md border bg-slate-50 px-3 py-2 text-sm dark:bg-gray-950">
+                                    <Receipt className="size-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">{t("invoice.list.filteredOrders")}</p>
+                                        <p className="font-semibold text-foreground">{totalElements}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 rounded-md border bg-slate-50 px-3 py-2 text-sm dark:bg-gray-950">
+                                    <Store className="size-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">{t("invoice.list.totalAuctionSessions")}</p>
+                                        <p className="font-semibold text-foreground">{sellerStats?.totalAuctionSessions ?? "--"}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 rounded-md border bg-slate-50 px-3 py-2 text-sm dark:bg-gray-950">
+                                    <Wallet className="size-4 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">{t("invoice.list.totalRevenue")}</p>
+                                        <p className="font-semibold text-foreground">
+                                            {sellerStats ? formatCurrency(sellerStats.totalRevenue) : "--"}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                             <Select
                                 value={typeFilter}

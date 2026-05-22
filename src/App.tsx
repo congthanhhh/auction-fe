@@ -20,6 +20,18 @@ import Detail from './components/auction/Detail';
 import Categories from './pages/Categories';
 import CategoryProducts from './pages/CategoryProducts';
 import Stories from './pages/Stories';
+import { AdminRoute } from './components/admin/layout/AdminRoute';
+import { AdminLayout } from './components/admin/layout/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminProducts from './pages/admin/AdminProducts';
+import AdminAuctions from './pages/admin/AdminAuctions';
+import AdminInvoices from './pages/admin/AdminInvoices';
+import AdminDisputes from './pages/admin/AdminDisputes';
+import AdminCategories from './pages/admin/AdminCategories';
+import AdminRoles from './pages/admin/AdminRoles';
+import AdminSettings from './pages/admin/AdminSettings';
+import AdminLogs from './pages/admin/AdminLogs';
 
 function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
@@ -55,6 +67,21 @@ function App() {
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/authenticate" element={<GoogleAuthCallback />} />
+
+          <Route element={<AdminRoute />}>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="products" element={<AdminProducts />} />
+              <Route path="auctions" element={<AdminAuctions />} />
+              <Route path="invoices" element={<AdminInvoices />} />
+              <Route path="disputes" element={<AdminDisputes />} />
+              <Route path="categories" element={<AdminCategories />} />
+              <Route path="roles" element={<AdminRoles />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="logs" element={<AdminLogs />} />
+            </Route>
+          </Route>
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

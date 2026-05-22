@@ -7,9 +7,7 @@ import {
     Gavel,
     Handshake,
     HelpCircle,
-    Mail,
     MapPin,
-    MessageCircle,
     PackageCheck,
     PackageSearch,
     ShieldCheck,
@@ -75,9 +73,9 @@ const auctionSteps = [
         description: "Khi phiên kết thúc, hệ thống tự xác định người đấu giá cao nhất là người thắng cuộc.",
     },
     {
-        icon: Handshake,
-        title: "Liên hệ và hoàn tất giao dịch",
-        description: "Người bán và người thắng chủ động trao đổi thanh toán, địa chỉ, thời gian giao hàng và điều khoản liên quan.",
+        icon: BadgeDollarSign,
+        title: "Thanh toán và mở đơn hàng",
+        description: "Người thắng vào hóa đơn, chọn địa chỉ nhận hàng và thanh toán qua VNPay. Khi thanh toán thành công, đơn chuyển sang PAID để người bán gửi hàng.",
     },
 ];
 
@@ -97,47 +95,101 @@ const sellerResponsibilities = [
 
 const shippingSteps = [
     {
-        icon: Mail,
-        title: "Xem thông tin người thắng",
-        description: "Trong chi tiết đơn hàng, người bán có thể xem thông tin người thắng như số điện thoại, email và giá thắng.",
-    },
-    {
-        icon: MessageCircle,
-        title: "Chủ động liên hệ",
-        description: "Hai bên trao đổi trực tiếp về phương thức thanh toán, địa chỉ giao hàng, thời gian giao và các điều khoản khác.",
+        icon: BadgeDollarSign,
+        title: "Người mua thanh toán",
+        description: "Sau khi thắng đấu giá, người mua thanh toán hóa đơn qua VNPay. Đơn hàng ở trạng thái PAID khi hệ thống ghi nhận thanh toán thành công.",
     },
     {
         icon: Truck,
-        title: "Người bán tự sắp xếp giao hàng",
-        description: "Website không trực tiếp giao hàng và không quản lý logistics. Người bán chọn đơn vị vận chuyển hoặc cách giao phù hợp.",
+        title: "Người bán xác nhận gửi hàng",
+        description: "Khi đơn đã PAID, người bán đóng gói, gửi qua đơn vị vận chuyển và nhập mã vận đơn như VN123456 trong chi tiết đơn hàng.",
+    },
+    {
+        icon: PackageSearch,
+        title: "Người mua theo dõi vận đơn",
+        description: "Khi đơn chuyển sang SHIPPING, người mua xem mã vận đơn trên website và tra cứu hành trình tại trang của đơn vị vận chuyển.",
     },
     {
         icon: PackageCheck,
-        title: "Người mua kiểm tra khi nhận",
-        description: "Khi nhận hàng, người mua nên kiểm tra sản phẩm, tình trạng đóng gói và lưu lại bằng chứng nếu có vấn đề.",
+        title: "Người mua xác nhận đã nhận hàng",
+        description: "Sau khi nhận và kiểm tra sản phẩm, người mua bấm Đã nhận được hàng. Đơn chuyển sang COMPLETED và có thể mở đánh giá.",
+    },
+    {
+        icon: HelpCircle,
+        title: "Khiếu nại trước khi tự hoàn thành",
+        description: "Nếu chưa nhận được hàng hoặc vận chuyển có vấn đề, người mua bấm Khiếu nại / Báo mất khi đơn còn SHIPPING để chuyển đơn sang DISPUTE.",
+    },
+    {
+        icon: Clock,
+        title: "Tự động hoàn thành",
+        description: "Nếu hết thời gian chờ mà không có khiếu nại, hệ thống có thể tự hoàn thành đơn để tránh đơn bị treo. Đơn DISPUTE sẽ không tự hoàn thành.",
     },
 ];
 
 const orderDetailItems = [
-    "Thông tin người thắng: số điện thoại, email.",
-    "Giá đấu thắng.",
-    "Trạng thái đơn hàng.",
-    "Thời gian còn lại để xác nhận hoặc xử lý đơn.",
+    "Thông tin người nhận: tên, số điện thoại, email và địa chỉ giao hàng.",
+    "Giá đấu thắng, thời hạn thanh toán và thời điểm thanh toán nếu có.",
+    "Trạng thái đơn hàng: PENDING, PAID, SHIPPING, COMPLETED, DISPUTE hoặc trạng thái hủy/hoàn tiền.",
+    "Đơn vị vận chuyển, mã vận đơn và thời điểm người bán xác nhận đã gửi hàng.",
+    "Các thao tác phù hợp với vai trò: thanh toán, xác nhận gửi hàng, xác nhận đã nhận hàng hoặc khiếu nại.",
 ];
 
 const platformRoles = [
-    "Hệ thống chỉ là nền tảng kết nối giữa người bán và người mua.",
-    "Hệ thống không giữ tiền và không trực tiếp xử lý thanh toán giữa hai bên.",
+    "Hệ thống ghi nhận thanh toán VNPay và cập nhật trạng thái hóa đơn theo từng bước.",
+    "Hệ thống lưu mã vận đơn để người mua có thể theo dõi quá trình giao hàng.",
     "Hệ thống không giao hàng, không quản lý logistics và không bảo đảm quá trình vận chuyển.",
-    "Hệ thống không có chức năng hoàn tiền hay đứng ra giải quyết tranh chấp thay hai bên.",
-    "Mọi vấn đề phát sinh về chất lượng sản phẩm, giao hàng hoặc thanh toán cần được người bán và người mua tự trao đổi, tự giải quyết.",
+    "Khi có DISPUTE, hệ thống dừng tự động hoàn thành và chuyển đơn sang trạng thái cần kiểm tra thủ công.",
+    "Admin hoặc người bán cần kiểm tra thêm với đơn vị vận chuyển khi phát sinh khiếu nại.",
+];
+
+const orderStatusFlow = [
+    {
+        status: "PENDING",
+        label: "Chờ thanh toán",
+        description: "Đơn vừa được tạo sau khi thắng đấu giá hoặc mua ngay, người mua cần chọn địa chỉ và thanh toán.",
+    },
+    {
+        status: "PAID",
+        label: "Đã thanh toán",
+        description: "VNPay đã ghi nhận thanh toán, người bán bắt đầu đóng gói và gửi hàng.",
+    },
+    {
+        status: "SHIPPING",
+        label: "Đang giao hàng",
+        description: "Người bán đã nhập mã vận đơn, người mua theo dõi và chờ nhận hàng.",
+    },
+    {
+        status: "COMPLETED",
+        label: "Hoàn thành",
+        description: "Người mua xác nhận đã nhận hàng hoặc hệ thống tự hoàn thành sau thời gian chờ.",
+    },
+    {
+        status: "DISPUTE",
+        label: "Khiếu nại",
+        description: "Người mua báo chưa nhận hàng hoặc có vấn đề, đơn được dừng tự hoàn thành để kiểm tra.",
+    },
+    {
+        status: "CANCELLED_NON_PAYMENT",
+        label: "Hủy do không thanh toán",
+        description: "Người thắng không thanh toán đúng hạn, người bán có thể báo cáo bùng kèo.",
+    },
+    {
+        status: "CANCELLED_BY_SELLER",
+        label: "Người bán hủy",
+        description: "Đơn bị hủy từ phía người bán theo quy trình xử lý của hệ thống.",
+    },
+    {
+        status: "REFUNDED",
+        label: "Đã hoàn tiền",
+        description: "Đơn đã được ghi nhận hoàn tiền sau quá trình xử lý liên quan.",
+    },
 ];
 
 const quickTips = [
     "Đặt giá tối đa theo ngân sách thật, không theo cảm xúc ở phút cuối.",
     "Kiểm tra kỹ ảnh, mô tả, giá mua ngay và thời gian kết thúc trước khi bid.",
-    "Người bán nên lưu lại hình ảnh sản phẩm và bằng chứng giao hàng.",
-    "Người mua nên xác nhận rõ phí vận chuyển, thời gian giao và tình trạng sản phẩm trước khi thanh toán.",
+    "Người bán nên lưu lại hình ảnh đóng gói, biên nhận gửi hàng và mã vận đơn.",
+    "Người mua nên chọn đúng địa chỉ nhận hàng, theo dõi vận đơn và khiếu nại sớm nếu gần hết thời gian chờ.",
 ];
 
 export default function Stories() {
@@ -209,15 +261,15 @@ export default function Stories() {
                         <div className="rounded-lg border bg-white p-5 shadow-sm dark:bg-gray-900">
                             <h2 className="font-semibold text-foreground">Website giữ vai trò gì?</h2>
                             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                                AuctionShop hỗ trợ đăng bài, duyệt bài, hiển thị phiên và thông tin đơn hàng.
-                                Việc thanh toán, vận chuyển và xử lý tranh chấp thực tế do người bán và người mua tự thỏa thuận.
+                                AuctionShop hỗ trợ đăng bài, duyệt bài, ghi nhận thanh toán VNPay, lưu mã vận đơn và cập nhật
+                                trạng thái đơn hàng. Việc giao hàng thực tế vẫn do người bán làm việc với đơn vị vận chuyển.
                             </p>
                         </div>
                         <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 shadow-sm dark:border-amber-900 dark:bg-amber-950/30">
                             <h2 className="font-semibold text-amber-900 dark:text-amber-100">Lưu ý quan trọng</h2>
                             <p className="mt-3 text-sm leading-6 text-amber-800 dark:text-amber-200">
-                                Trước khi thanh toán hoặc giao hàng, hai bên nên xác nhận rõ thông tin sản phẩm,
-                                phí vận chuyển, thời gian giao và cách xử lý nếu có phát sinh.
+                                Sau khi người bán nhập mã vận đơn, người mua nên theo dõi đơn thường xuyên. Nếu gần hết thời gian chờ
+                                mà vẫn chưa nhận được hàng, hãy tạo khiếu nại khi đơn còn ở trạng thái SHIPPING.
                             </p>
                         </div>
                     </aside>
@@ -343,7 +395,8 @@ export default function Stories() {
                             <div>
                                 <h2 className="text-2xl font-bold text-gray-950 dark:text-white">Vận chuyển, giao và nhận hàng</h2>
                                 <p className="mt-2 text-sm text-muted-foreground">
-                                    Sau khi đấu giá kết thúc, hệ thống tạo thông tin đơn hàng để hai bên liên hệ và hoàn tất giao dịch.
+                                    Sau khi đấu giá kết thúc, người thắng thanh toán hóa đơn. Từ đó đơn hàng đi qua các bước thanh toán,
+                                    gửi hàng, nhận hàng, tự hoàn thành hoặc khiếu nại.
                                 </p>
                             </div>
                             <div className="grid gap-4 md:grid-cols-2">
@@ -363,6 +416,26 @@ export default function Stories() {
                                         </div>
                                     );
                                 })}
+                            </div>
+                        </div>
+
+                        <div className="rounded-lg border bg-white p-5 shadow-sm dark:bg-gray-900">
+                            <div className="flex items-center gap-3">
+                                <Clock className="size-5 text-brand" />
+                                <h2 className="text-xl font-bold text-gray-950 dark:text-white">Luồng trạng thái đơn hàng</h2>
+                            </div>
+                            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                {orderStatusFlow.map((item) => (
+                                    <div key={item.status} className="rounded-md border bg-slate-50 p-3 dark:bg-gray-950">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <Badge variant="outline" className="border-brand/30 bg-white font-mono text-[11px] text-brand dark:bg-gray-900">
+                                                {item.status}
+                                            </Badge>
+                                            <h3 className="text-sm font-semibold text-foreground">{item.label}</h3>
+                                        </div>
+                                        <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 

@@ -59,6 +59,11 @@ export interface InvoiceResponse {
 
 export type InvoicePageResponse = PageResponse<InvoiceResponse>;
 
+export interface SellerRevenueResponse {
+    totalAuctionSessions: number;
+    totalRevenue: number;
+}
+
 export interface ShipInvoiceRequest {
     trackingCode: string;
     carrier?: string;

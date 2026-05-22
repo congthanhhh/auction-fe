@@ -3,6 +3,12 @@ import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL, API_ENDPOINTS } from '@/constants/api';
 import { authService } from './authService';
 
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    skipAuthRedirect?: boolean;
+  }
+}
+
 interface ApiErrorPayload {
   message?: string;
   code?: string;
@@ -41,10 +47,7 @@ api.interceptors.request.use(
     const publicEndpoints = [
       API_ENDPOINTS.AUTH.LOGIN,
       API_ENDPOINTS.AUTH.GOOGLE_LOGIN,
-      API_ENDPOINTS.AUTH.REGISTER,
       API_ENDPOINTS.AUTH.REFRESH_TOKEN,
-      API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
-      API_ENDPOINTS.AUTH.RESET_PASSWORD,
       API_ENDPOINTS.USER.FORGOT_PASSWORD,
       API_ENDPOINTS.USER.RESET_PASSWORD,
     ];
@@ -124,6 +127,10 @@ api.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     // Xử lý lỗi 401 - Unauthorized (Token hết hạn)
+    if (error.response?.status === 401 && originalRequest.skipAuthRedirect) {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 

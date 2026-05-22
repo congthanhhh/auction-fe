@@ -25,14 +25,16 @@ import {
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/stores/authStore';
 import { categoryService } from '@/services/categoryService';
-import type { CategoryResponse } from '@/types/auction';
+import { productService } from '@/services/productService';
+import type { CategoryResponse, ProductResponse } from '@/types/auction';
 import { NotificationBell } from './NotificationBell';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { HeaderSearchSuggestions } from './HeaderSearchSuggestions';
 
 export default function Header() {
     const navigate = useNavigate();
@@ -47,6 +49,10 @@ export default function Header() {
     const [categories, setCategories] = useState<CategoryResponse[]>([]);
     const [isLoadingCategories, setIsLoadingCategories] = useState(false);
     const [categoryError, setCategoryError] = useState<string | null>(null);
+    const [searchKeyword, setSearchKeyword] = useState('');
+    const [searchSuggestions, setSearchSuggestions] = useState<ProductResponse[]>([]);
+    const [isLoadingSearchSuggestions, setIsLoadingSearchSuggestions] = useState(false);
+    const [isSearchSuggestionsOpen, setIsSearchSuggestionsOpen] = useState(false);
 
     const buildSignInLink = () => {
         if (location.pathname === '/signin') return '/signin';
@@ -61,6 +67,40 @@ export default function Header() {
     const handleLogout = async () => {
         await logoutWithApi();
         navigate('/signin');
+    };
+
+    const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const keyword = searchKeyword.trim();
+
+        if (!keyword) {
+            navigate('/view-all-featured');
+            setSearchExpanded(false);
+            setMobileMenuOpen(false);
+            return;
+        }
+
+        const params = new URLSearchParams();
+        params.set('keyword', keyword);
+        navigate(`/view-all-featured?${params.toString()}`);
+        setSearchExpanded(false);
+        setMobileMenuOpen(false);
+        setIsSearchSuggestionsOpen(false);
+    };
+
+    const handleSearchInputChange = (value: string) => {
+        setSearchKeyword(value);
+        setIsSearchSuggestionsOpen(Boolean(value.trim()));
+    };
+
+    const handleSelectSearchProduct = (product: ProductResponse) => {
+        const params = new URLSearchParams();
+        params.set('keyword', product.name);
+        setSearchKeyword(product.name);
+        setIsSearchSuggestionsOpen(false);
+        setSearchExpanded(false);
+        setMobileMenuOpen(false);
+        navigate(`/view-all-featured?${params.toString()}`);
     };
 
     useEffect(() => {
@@ -82,6 +122,56 @@ export default function Header() {
         fetchCategories();
     }, [t]);
 
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        setSearchKeyword(params.get('keyword') ?? '');
+    }, [location.search]);
+
+    useEffect(() => {
+        const keyword = searchKeyword.trim();
+
+        if (!keyword) {
+            setSearchSuggestions([]);
+            setIsLoadingSearchSuggestions(false);
+            return;
+        }
+
+        let isMounted = true;
+        const timeoutId = window.setTimeout(async () => {
+            try {
+                setIsLoadingSearchSuggestions(true);
+                const response = await productService.searchProducts(
+                    {
+                        keyword,
+                        status: 'ACTIVE',
+                        isActive: true,
+                        sort: 'newest',
+                    },
+                    1,
+                    6,
+                );
+
+                if (isMounted) {
+                    setSearchSuggestions(response.data ?? []);
+                }
+            } catch (err) {
+                console.error('Failed to fetch header search suggestions:', err);
+                if (isMounted) {
+                    setSearchSuggestions([]);
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoadingSearchSuggestions(false);
+                }
+            }
+        }, 250);
+
+        return () => {
+            isMounted = false;
+            window.clearTimeout(timeoutId);
+        };
+    }, [searchKeyword]);
+
     // Get user initials for avatar
     const getUserInitials = () => {
         if (!user?.username) return 'U';
@@ -101,21 +191,33 @@ export default function Header() {
                         </Link>
 
                         {/* Search Bar - chiếm phần lớn không gian */}
-                        <div className="flex-1 max-w-2xl">
+                        <form className="flex-1 max-w-2xl" onSubmit={handleSearchSubmit}>
                             <div className='relative'>
                                 <Input
                                     type="text"
                                     placeholder={t('navigation.searchPlaceholder')}
                                     className="pr-12 rounded-full"
+                                    value={searchKeyword}
+                                    onBlur={() => setTimeout(() => setIsSearchSuggestionsOpen(false), 120)}
+                                    onChange={(event) => handleSearchInputChange(event.target.value)}
+                                    onFocus={() => setIsSearchSuggestionsOpen(Boolean(searchKeyword.trim()))}
                                 />
                                 <Button
+                                    type="submit"
                                     size="icon"
                                     className="absolute right-0 top-0 rounded-r-full w-1/12 bg-brand hover:bg-brand-hover dark:bg-brand-hover dark:hover:bg-brand"
                                 >
                                     <Search />
                                 </Button>
+                                <HeaderSearchSuggestions
+                                    products={searchSuggestions}
+                                    isLoading={isLoadingSearchSuggestions}
+                                    keyword={searchKeyword}
+                                    isOpen={isSearchSuggestionsOpen}
+                                    onSelectProduct={handleSelectSearchProduct}
+                                />
                             </div>
-                        </div>
+                        </form>
 
                         {/* Right Actions */}
                         <div className="flex items-center gap-2">
@@ -521,22 +623,34 @@ export default function Header() {
 
                     {/* Expandable Search Bar */}
                     {searchExpanded && (
-                        <div className="mt-3 pb-2 animate-in slide-in-from-top-2 duration-300">
+                        <form className="mt-3 pb-2 animate-in slide-in-from-top-2 duration-300" onSubmit={handleSearchSubmit}>
                             <div className="relative">
                                 <Input
                                     type="text"
                                     placeholder={t('navigation.searchPlaceholder')}
                                     className="pr-12 rounded-full"
+                                    value={searchKeyword}
+                                    onBlur={() => setTimeout(() => setIsSearchSuggestionsOpen(false), 120)}
+                                    onChange={(event) => handleSearchInputChange(event.target.value)}
+                                    onFocus={() => setIsSearchSuggestionsOpen(Boolean(searchKeyword.trim()))}
                                     autoFocus
                                 />
                                 <Button
+                                    type="submit"
                                     size="icon"
                                     className="absolute right-0 top-0 rounded-r-full bg-brand hover:bg-brand-hover"
                                 >
                                     <Search className="h-4 w-4" />
                                 </Button>
+                                <HeaderSearchSuggestions
+                                    products={searchSuggestions}
+                                    isLoading={isLoadingSearchSuggestions}
+                                    keyword={searchKeyword}
+                                    isOpen={isSearchSuggestionsOpen}
+                                    onSelectProduct={handleSelectSearchProduct}
+                                />
                             </div>
-                        </div>
+                        </form>
                     )}
                 </div>
             </div>

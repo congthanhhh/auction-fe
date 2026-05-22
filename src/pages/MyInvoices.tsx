@@ -92,7 +92,7 @@ export default function MyInvoices() {
 
     const typeFilterOptions: { value: "ALL" | InvoiceType; label: string }[] = [
         { value: "ALL", label: t("invoice.list.allTypes") },
-        { value: "AUCTION_SALE", label: t("invoice.list.buyingInvoice") },
+        { value: "AUCTION_SALE", label: t(invoiceTypeLabelKeys.AUCTION_SALE) },
         { value: "LISTING_FEE", label: t(invoiceTypeLabelKeys.LISTING_FEE) },
     ];
 

@@ -4,7 +4,9 @@ import MySessionsList from "@/components/auction/MySessionsList";
 import { CreateProductDialog } from "@/components/auction/CreateProductDialog";
 import { CreateSessionDialog } from "@/components/auction/CreateSessionDialog";
 import { auctionService } from "@/services/auctionService";
+import { invoiceService } from "@/services/invoiceService";
 import type { AuctionSessionResponse, AuctionStatus, PageResponse } from "@/types/auction";
+import type { InvoiceResponse } from "@/types/invoice";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { SimplePagination } from "@/components/common/SimplePagination";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +23,8 @@ export default function MySessions() {
     const [page, setPage] = useState<number>(1);
     const [size] = useState<number>(10);
     const [statusFilter, setStatusFilter] = useState<"ALL" | AuctionStatus>("ALL");
+    const [listingFeeInvoicesBySessionId, setListingFeeInvoicesBySessionId] = useState<Record<number, InvoiceResponse>>({});
+    const [isLoadingListingFeeInvoices, setIsLoadingListingFeeInvoices] = useState(false);
 
     useEffect(() => {
         const allowed = requireAuth();
@@ -49,6 +53,53 @@ export default function MySessions() {
         }
     }, [page, size, statusFilter, t]);
 
+    const fetchListingFeeInvoices = useCallback(async (sessionIds: number[]) => {
+        const targetSessionIds = new Set(sessionIds);
+
+        if (targetSessionIds.size === 0) {
+            setListingFeeInvoicesBySessionId({});
+            setIsLoadingListingFeeInvoices(false);
+            return;
+        }
+
+        try {
+            setIsLoadingListingFeeInvoices(true);
+
+            const next: Record<number, InvoiceResponse> = {};
+            let invoicePage = 1;
+            const invoicePageSize = 100;
+            let totalPages = 1;
+
+            while (invoicePage <= totalPages) {
+                const response = await invoiceService.getMyListingFees({
+                    page: invoicePage,
+                    size: invoicePageSize,
+                });
+
+                totalPages = response.totalPages || 1;
+
+                for (const invoice of response.data ?? []) {
+                    if (targetSessionIds.has(invoice.auctionSessionId)) {
+                        next[invoice.auctionSessionId] = invoice;
+                    }
+                }
+
+                if (Object.keys(next).length === targetSessionIds.size) {
+                    break;
+                }
+
+                invoicePage += 1;
+            }
+
+            setListingFeeInvoicesBySessionId(next);
+        } catch (err) {
+            console.error("Failed to load listing fee invoices for waiting sessions:", err);
+            setListingFeeInvoicesBySessionId({});
+        } finally {
+            setIsLoadingListingFeeInvoices(false);
+        }
+    }, []);
+
     useEffect(() => {
         let isActive = true;
 
@@ -63,6 +114,15 @@ export default function MySessions() {
             isActive = false;
         };
     }, [fetchMySessions]);
+
+    useEffect(() => {
+        const waitingPaymentSessionIds =
+            pageData?.data
+                .filter((session) => session.status === "WAITING_PAYMENT")
+                .map((session) => session.id) ?? [];
+
+        fetchListingFeeInvoices(waitingPaymentSessionIds);
+    }, [fetchListingFeeInvoices, pageData?.data]);
 
     const totalPages = pageData?.totalPages ?? 1;
     const totalElements = pageData?.totalElements ?? 0;
@@ -177,6 +237,8 @@ export default function MySessions() {
                 {!isLoading && !error && (
                     <MySessionsList
                         sessions={pageData?.data ?? []}
+                        listingFeeInvoicesBySessionId={listingFeeInvoicesBySessionId}
+                        isLoadingListingFeeInvoices={isLoadingListingFeeInvoices}
                         onToggleStatus={handleToggleStatus}
                         onSessionUpdated={fetchMySessions}
                     />

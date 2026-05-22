@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react"
+import { type FormEvent, useEffect, useState } from "react"
 import { Search } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { Input } from "@/components/ui/input"
@@ -51,6 +51,7 @@ interface ViewAllCardProps {
     currentPage: number
     categories?: CategoryResponse[]
     selectedCategoryId?: number
+    initialFilters?: ProductFilterState
     onPageChange: (page: number) => void
     onFilterChange?: (filters: ProductFilterState) => void
     onSortChange?: (sortBy: string) => void
@@ -66,17 +67,22 @@ export default function ViewAllCard({
     currentPage,
     categories = [],
     selectedCategoryId,
+    initialFilters,
     onPageChange,
     onFilterChange,
     onSortChange,
 }: ViewAllCardProps) {
     const { t } = useTranslation()
-    const [keyword, setKeyword] = useState("")
+    const [keyword, setKeyword] = useState(initialFilters?.keyword ?? "")
     const [categoryValue, setCategoryValue] = useState(
-        selectedCategoryId ? String(selectedCategoryId) : allCategoriesValue,
+        selectedCategoryId
+            ? String(selectedCategoryId)
+            : initialFilters?.categoryId
+                ? String(initialFilters.categoryId)
+                : allCategoriesValue,
     )
-    const [priceMin, setPriceMin] = useState("")
-    const [priceMax, setPriceMax] = useState("")
+    const [priceMin, setPriceMin] = useState(initialFilters?.priceMin ? String(initialFilters.priceMin) : "")
+    const [priceMax, setPriceMax] = useState(initialFilters?.priceMax ? String(initialFilters.priceMax) : "")
 
     const totalPages = Math.ceil(totalItems / itemsPerPage)
     const firstItemIndex = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1
@@ -88,6 +94,19 @@ export default function ViewAllCard({
         priceMin: priceMin ? Number(priceMin) : undefined,
         priceMax: priceMax ? Number(priceMax) : undefined,
     })
+
+    useEffect(() => {
+        setKeyword(initialFilters?.keyword ?? "")
+        setCategoryValue(
+            selectedCategoryId
+                ? String(selectedCategoryId)
+                : initialFilters?.categoryId
+                    ? String(initialFilters.categoryId)
+                    : allCategoriesValue,
+        )
+        setPriceMin(initialFilters?.priceMin ? String(initialFilters.priceMin) : "")
+        setPriceMax(initialFilters?.priceMax ? String(initialFilters.priceMax) : "")
+    }, [initialFilters, selectedCategoryId])
 
     const handleSubmitFilters = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()

@@ -5,16 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
-import { invoiceStatusLabelKeys, invoiceStatusVariants, invoiceTypeLabelKeys } from "@/types/invoice-labels";
+import { invoiceStatusLabelKeys, invoiceStatusVariants, invoiceTypeLabelKeys, invoiceTypeVariants } from "@/types/invoice-labels";
 import type { AddressResponse } from "@/types/user";
 import { FeedbackRating, type FeedbackRequest } from "@/types/feedback";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Receipt, CreditCard, Truck, CheckCircle2, XCircle, AlertCircle, Mail, MapPin, Phone, UserRound, Star, Smile, Meh, Frown } from "lucide-react";
+import { Loader2, Receipt, CreditCard, Truck, CheckCircle2, XCircle, AlertCircle, Mail, MapPin, Phone, UserRound, Star, Smile, Meh, Frown, Copy, ClipboardCheck, CalendarClock } from "lucide-react";
 
 interface InvoiceDetailProps {
     invoice: InvoiceResponse;
@@ -65,6 +65,7 @@ export default function InvoiceDetail({
     const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
     const [feedbackRating, setFeedbackRating] = useState<FeedbackRating>(FeedbackRating.POSITIVE);
     const [feedbackComment, setFeedbackComment] = useState("");
+    const [hasCopiedTracking, setHasCopiedTracking] = useState(false);
 
     const handleShipSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -104,6 +105,31 @@ export default function InvoiceDetail({
         }
     };
 
+    const handleCopyTrackingCode = async () => {
+        if (!invoice.trackingCode) return;
+
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(invoice.trackingCode);
+            } else {
+                const textarea = document.createElement("textarea");
+                textarea.value = invoice.trackingCode;
+                textarea.setAttribute("readonly", "");
+                textarea.style.position = "fixed";
+                textarea.style.opacity = "0";
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand("copy");
+                document.body.removeChild(textarea);
+            }
+
+            setHasCopiedTracking(true);
+            window.setTimeout(() => setHasCopiedTracking(false), 2000);
+        } catch {
+            alert(t("invoice.detail.copyTrackingError"));
+        }
+    };
+
     const handleFeedbackSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!onCreateFeedback) return;
@@ -122,6 +148,10 @@ export default function InvoiceDetail({
     };
     const firstImage = invoice.product.images[0]?.url;
 
+    const isListingFee = invoice.type === "LISTING_FEE";
+    const isAuctionSale = invoice.type === "AUCTION_SALE";
+    const isSellerAuctionFlow = Boolean(isSeller && isAuctionSale);
+    const amountLabel = isListingFee ? t("invoice.list.listingFeeAmount") : t("invoice.list.finalPrice");
     const canPay = invoice.status === "PENDING";
     const isOverdue = invoice.dueDate ? new Date() > new Date(invoice.dueDate) : false;
     const canCreateFeedback =
@@ -169,6 +199,12 @@ export default function InvoiceDetail({
         : invoice.shippingAddress;
 
     const getStepperStatus = () => {
+        if (isListingFee) {
+            if (invoice.status === "PENDING") return 0;
+            if (invoice.status === "PAID" || invoice.status === "COMPLETED") return 2;
+            return -1;
+        }
+
         if (invoice.status === "PENDING") return 0;
         if (invoice.status === "PAID") return 1;
         if (invoice.status === "SHIPPING") return 2;
@@ -178,13 +214,23 @@ export default function InvoiceDetail({
 
     const currentStep = getStepperStatus();
     const isErrorState = invoice.status === "DISPUTE" || invoice.status.startsWith("CANCELLED") || invoice.status === "REFUNDED";
+    const autoCompleteDate =
+        invoice.status === "SHIPPING" && invoice.shippedAt
+            ? addDays(new Date(invoice.shippedAt), 15)
+            : null;
     const disputeDecisionLabels: Record<NonNullable<DisputeResponse["decision"]>, string> = {
         PENDING: "Đang chờ xử lý",
         REFUND_TO_BUYER: "Hoàn tiền cho người mua",
         RELEASE_TO_SELLER: "Thanh toán cho người bán",
     };
 
-    const steps = [
+    const steps = isListingFee
+        ? [
+            { id: 0, title: "Chờ thanh toán", icon: Receipt },
+            { id: 1, title: "Đã thanh toán", icon: CreditCard },
+            { id: 2, title: "Hoàn tất phí", icon: CheckCircle2 },
+        ]
+        : [
         { id: 0, title: "Chờ thanh toán", icon: Receipt },
         { id: 1, title: "Đã thanh toán", icon: CreditCard },
         { id: 2, title: "Đang giao", icon: Truck },
@@ -202,6 +248,12 @@ export default function InvoiceDetail({
                         <CardDescription>
                             {t(invoiceTypeLabelKeys[invoice.type])} · #{invoice.auctionSessionId}
                         </CardDescription>
+                        <Badge
+                            variant="outline"
+                            className={`w-fit border text-xs font-medium ${invoiceTypeVariants[invoice.type]}`}
+                        >
+                            {t(invoiceTypeLabelKeys[invoice.type])}
+                        </Badge>
                     </div>
                     <div className="flex flex-col items-start gap-2 sm:items-end">
                         <div className="flex flex-wrap items-center gap-2">
@@ -280,7 +332,13 @@ export default function InvoiceDetail({
                                     )}
                                 </div>
                             )}
-                            <p className="text-sm text-muted-foreground mt-1">Đơn hàng này không thể hoàn thành.</p>
+                            {invoice.status === "DISPUTE" ? (
+                                <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
+                                    {t("invoice.detail.disputeAutoCompleteStopped")}
+                                </p>
+                            ) : (
+                                <p className="mt-1 text-sm text-muted-foreground">Đơn hàng này không thể hoàn thành.</p>
+                            )}
                         </div>
                     ) : (
                         <div className="relative">
@@ -339,7 +397,7 @@ export default function InvoiceDetail({
 
                             <div className="space-y-2 text-sm">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">Giá thắng cuộc</span>
+                                    <span className="text-muted-foreground">{amountLabel}</span>
                                     <span className="text-lg font-semibold text-foreground">
                                         {formatCurrency(invoice.finalPrice)}
                                     </span>
@@ -363,6 +421,8 @@ export default function InvoiceDetail({
 
                         {/* Thông tin giao hàng & thanh toán */}
                         <div className="space-y-4 text-sm">
+                            {isAuctionSale ? (
+                                <>
                             <div className="rounded-lg border bg-muted/20 p-4">
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                     <h3 className="text-sm font-semibold text-foreground">Thông tin nhận hàng</h3>
@@ -425,29 +485,89 @@ export default function InvoiceDetail({
 
                             <Separator />
 
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 <h3 className="text-sm font-semibold text-foreground">Vận chuyển</h3>
-                                <p className="text-xs text-muted-foreground">
-                                    Đơn vị vận chuyển: {invoice.carrier || "Chưa cập nhật"}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    Mã vận đơn: {invoice.trackingCode || "Chưa cập nhật"}
-                                </p>
-                                {invoice.shippedAt && (
-                                    <p className="text-xs text-muted-foreground">
-                                        Đã gửi hàng lúc {format(new Date(invoice.shippedAt), "dd/MM/yyyy HH:mm")}
-                                    </p>
+                                {invoice.trackingCode ? (
+                                    <div className="rounded-lg border bg-sky-50/70 p-3 text-sm dark:bg-sky-950/20">
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                            <div className="space-y-2">
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground">Đơn vị vận chuyển</p>
+                                                    <p className="font-medium text-foreground">{invoice.carrier || t("invoice.list.carrier")}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground">Mã vận đơn</p>
+                                                    <p className="font-mono text-base font-semibold text-foreground">{invoice.trackingCode}</p>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                className="gap-2"
+                                                onClick={handleCopyTrackingCode}
+                                            >
+                                                {hasCopiedTracking ? (
+                                                    <ClipboardCheck className="size-4" />
+                                                ) : (
+                                                    <Copy className="size-4" />
+                                                )}
+                                                {hasCopiedTracking ? t("invoice.detail.trackingCopied") : t("invoice.detail.copyTracking")}
+                                            </Button>
+                                        </div>
+                                        <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                                            {t("invoice.detail.trackingLookupHint")}
+                                        </p>
+                                        <div className="mt-3 grid gap-2 text-xs text-muted-foreground">
+                                            {invoice.shippedAt && (
+                                                <div className="flex items-center gap-2">
+                                                    <Truck className="size-4" />
+                                                    <span>
+                                                        {t("invoice.detail.shippedAt", {
+                                                            date: format(new Date(invoice.shippedAt), "dd/MM/yyyy HH:mm"),
+                                                        })}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {autoCompleteDate && (
+                                                <div className="flex items-center gap-2">
+                                                    <CalendarClock className="size-4" />
+                                                    <span>
+                                                        {t("invoice.detail.autoCompleteDate", {
+                                                            date: format(autoCompleteDate, "dd/MM/yyyy HH:mm"),
+                                                        })}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+                                        {t("invoice.detail.trackingPending")}
+                                    </div>
                                 )}
                             </div>
 
                             <Separator />
+                                </>
+                            ) : (
+                                <div className="rounded-lg border border-violet-200 bg-violet-50/70 p-4 text-sm text-violet-900 dark:border-violet-900 dark:bg-violet-950/20 dark:text-violet-100">
+                                    <div className="mb-2 flex items-center gap-2 font-semibold">
+                                        <CreditCard className="size-4" />
+                                        Phí giá sàn
+                                    </div>
+                                    <p className="text-xs leading-5 opacity-80">
+                                        Đây là hóa đơn LISTING_FEE để thanh toán giá chấp nhận bán khi tạo phiên. Hóa đơn này không có thông tin giao hàng.
+                                    </p>
+                                </div>
+                            )}
 
                             <div className="space-y-4 p-4 bg-muted/30 rounded-lg border border-brand/20">
                                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                                     <AlertCircle className="w-4 h-4 text-brand" /> Thao tác
                                 </h3>
                                 <div className="mt-1 flex flex-col gap-2 sm:flex-row">
-                                    {isSeller ? (
+                                    {isSellerAuctionFlow ? (
                                         <>
                                             {invoice.status === "PAID" && (
                                                 <Dialog open={isShipDialogOpen} onOpenChange={setIsShipDialogOpen}>

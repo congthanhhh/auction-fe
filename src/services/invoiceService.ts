@@ -1,6 +1,6 @@
 import { api } from "./api";
 import { API_ENDPOINTS } from "@/constants/api";
-import type { DisputeRequest, DisputeResponse, InvoicePageResponse, InvoiceResponse, InvoiceStatus, InvoiceType, ShipInvoiceRequest } from "@/types/invoice";
+import type { DisputeRequest, DisputeResponse, InvoicePageResponse, InvoiceResponse, InvoiceStatus, InvoiceType, SellerRevenueResponse, ShipInvoiceRequest } from "@/types/invoice";
 import type { MessageResponse } from "@/types/user";
 
 function unwrapApiResponse<T>(response: unknown): T {
@@ -55,6 +55,11 @@ export const invoiceService = {
             params,
         });
         return unwrapApiResponse<InvoicePageResponse>(response);
+    },
+
+    getSellerStats: async (): Promise<SellerRevenueResponse> => {
+        const response = await api.get(API_ENDPOINTS.INVOICE.SELLER_STATS);
+        return unwrapApiResponse<SellerRevenueResponse>(response);
     },
 
     getInvoiceById: async (id: number): Promise<InvoiceResponse> => {

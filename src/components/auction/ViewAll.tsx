@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { useSearchParams } from "react-router-dom"
 import ViewAllCard, { type AuctionListItem, type ProductFilterState } from "@/components/auction/ViewAllCard"
 import { productService } from "@/services/productService"
 import { categoryService } from "@/services/categoryService"
@@ -45,13 +46,19 @@ function mapSessionToAuctionItem(session: AuctionSessionResponse): AuctionListIt
 
 export default function ViewAll() {
     const { t } = useTranslation()
+    const [searchParams] = useSearchParams()
+    const keywordParam = searchParams.get("keyword")?.trim() ?? ""
+    const initialFilters = useMemo<ProductFilterState>(
+        () => (keywordParam ? { keyword: keywordParam } : {}),
+        [keywordParam],
+    )
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage] = useState(12)
     const [totalItems, setTotalItems] = useState(0)
     const [items, setItems] = useState<AuctionListItem[]>([])
     const [categories, setCategories] = useState<CategoryResponse[]>([])
     const [sortBy, setSortBy] = useState("newest")
-    const [filters, setFilters] = useState<ProductFilterState>({})
+    const [filters, setFilters] = useState<ProductFilterState>(initialFilters)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
@@ -74,6 +81,11 @@ export default function ViewAll() {
             isMounted = false
         }
     }, [])
+
+    useEffect(() => {
+        setFilters(initialFilters)
+        setCurrentPage(1)
+    }, [initialFilters])
 
     useEffect(() => {
         let isMounted = true
@@ -174,6 +186,7 @@ export default function ViewAll() {
     return (
         <ViewAllCard
             title={t("auction.list.featuredTitle")}
+            initialFilters={initialFilters}
             items={items}
             totalItems={totalItems}
             itemsPerPage={itemsPerPage}

@@ -2,6 +2,7 @@ import { API_ENDPOINTS } from "@/constants/api";
 import { api } from "@/services/api";
 import type { FeedbackPageResponse, FeedbackRequest } from "@/types/feedback";
 import type { MessageResponse } from "@/types/user";
+import type { AxiosRequestConfig } from "axios";
 
 function unwrapApiResponse<T>(response: unknown): T {
     return response as T;
@@ -33,8 +34,10 @@ export const feedbackService = {
         userId: string,
         page: number = 1,
         size: number = 10,
+        config?: AxiosRequestConfig,
     ): Promise<FeedbackPageResponse> => {
         const response = await api.get(API_ENDPOINTS.FEEDBACK.PUBLIC(userId), {
+            ...config,
             params: { page, size },
         });
         return unwrapApiResponse<FeedbackPageResponse>(response);

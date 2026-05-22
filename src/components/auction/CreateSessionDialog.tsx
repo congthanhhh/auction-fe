@@ -17,7 +17,7 @@ import { auctionService } from "@/services/auctionService";
 import type { AuctionSessionRequest, ProductResponse } from "@/types/auction";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
-import { Loader2, Plus } from "lucide-react";
+import { AlertCircle, Loader2, Plus } from "lucide-react";
 
 interface CreateSessionDialogProps {
     onCreated?: () => Promise<void> | void;
@@ -62,7 +62,7 @@ export function CreateSessionDialog({ onCreated }: CreateSessionDialogProps) {
     const [selectedProductId, setSelectedProductId] = useState<string>("");
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
-    const [reservePrice, setReservePrice] = useState("");
+    const [reservePrice, setReservePrice] = useState("0");
     const [buyNowPrice, setBuyNowPrice] = useState("");
     const [isCreatingSession, setIsCreatingSession] = useState(false);
     const [sessionError, setSessionError] = useState<string | null>(null);
@@ -118,9 +118,9 @@ export function CreateSessionDialog({ onCreated }: CreateSessionDialogProps) {
             return;
         }
 
-        const reservePriceValue = Number(reservePrice);
-        if (!Number.isFinite(reservePriceValue) || reservePriceValue <= 0) {
-            setSessionError("Giá chấp nhận bán phải lớn hơn 0");
+        const reservePriceValue = reservePrice.trim().length > 0 ? Number(reservePrice) : 0;
+        if (!Number.isFinite(reservePriceValue) || reservePriceValue < 0) {
+            setSessionError("Giá chấp nhận bán phải lớn hơn hoặc bằng 0");
             return;
         }
 
@@ -146,15 +146,23 @@ export function CreateSessionDialog({ onCreated }: CreateSessionDialogProps) {
 
         try {
             setIsCreatingSession(true);
-            await auctionService.createSession(payload);
+            const response = await auctionService.createSession(payload);
             setSessionSuccessMessage("Tạo phiên đấu giá thành công.");
             await onCreated?.();
+
+            if (reservePriceValue > 0 && response.paymentUrl) {
+                setSessionSuccessMessage("Tạo phiên thành công. Đang chuyển đến VNPay để thanh toán phí giá sàn...");
+                if (typeof window !== "undefined") {
+                    window.location.href = response.paymentUrl;
+                }
+                return;
+            }
 
             // Reset form values
             setSelectedProductId("");
             setStartTime("");
             setEndTime("");
-            setReservePrice("");
+            setReservePrice("0");
             setBuyNowPrice("");
         } catch (err) {
             const message =
@@ -180,6 +188,8 @@ export function CreateSessionDialog({ onCreated }: CreateSessionDialogProps) {
                     <DialogTitle>Tạo phiên đấu giá mới</DialogTitle>
                     <DialogDescription>
                         Chọn sản phẩm đã được duyệt và thiết lập thời gian, giá chấp nhận bán, giá mua ngay.
+                        <br />
+                        Giá chấp nhận bán có thể để 0; nếu nhập lớn hơn 0, bạn sẽ thanh toán riêng phí giá sàn qua VNPay.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -350,10 +360,15 @@ export function CreateSessionDialog({ onCreated }: CreateSessionDialogProps) {
                             <Input
                                 id="create-reservePrice"
                                 type="number"
+                                min={0}
                                 value={reservePrice}
                                 onChange={(e) => setReservePrice(e.target.value)}
-                                placeholder="Nhập giá chấp nhận bán"
+                                placeholder="0"
                             />
+                            <p className="flex items-start gap-1.5 text-xs leading-5 text-muted-foreground">
+                                <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+                                Để trống hoặc 0 nếu không dùng giá sàn. Nếu nhập lớn hơn 0, đây là phí giá sàn (LISTING_FEE), không phải hóa đơn bán đấu giá (AUCTION_SALE).
+                            </p>
                         </div>
                         <div className="space-y-1.5">
                             <Label htmlFor="create-buyNowPrice">Giá mua ngay</Label>

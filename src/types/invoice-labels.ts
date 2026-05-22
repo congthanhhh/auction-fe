@@ -26,3 +26,8 @@ export const invoiceTypeLabelKeys: Record<InvoiceType, string> = {
     AUCTION_SALE: "invoice.type.AUCTION_SALE",
     LISTING_FEE: "invoice.type.LISTING_FEE",
 };
+
+export const invoiceTypeVariants: Record<InvoiceType, string> = {
+    AUCTION_SALE: "bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-200 dark:border-sky-800",
+    LISTING_FEE: "bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-950/40 dark:text-violet-200 dark:border-violet-800",
+};

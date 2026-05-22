@@ -141,7 +141,9 @@ export default function InvoiceDetailPage() {
     const handlePay = async () => {
         if (!invoice) return;
 
-        if (!selectedAddress) {
+        const needsShippingAddress = invoice.type === "AUCTION_SALE";
+
+        if (needsShippingAddress && !selectedAddress) {
             alert(t("invoice.detail.selectAddressFirst"));
             return;
         }
@@ -149,7 +151,7 @@ export default function InvoiceDetailPage() {
         try {
             setIsPaying(true);
             // Tạo URL thanh toán VNPay và redirect người dùng
-            const paymentUrl = await paymentService.createVnPayPayment(invoice.id, selectedAddress.id);
+            const paymentUrl = await paymentService.createVnPayPayment(invoice.id, selectedAddress?.id);
             if (typeof window !== "undefined") {
                 window.location.href = paymentUrl;
             }

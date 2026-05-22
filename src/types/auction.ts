@@ -95,6 +95,11 @@ export interface AuctionSessionResponse {
     myMaxBid: number | null;
 }
 
+export interface CreateAuctionSessionResponse {
+    message: string;
+    paymentUrl?: string | null;
+    sessionDetails: AuctionSessionResponse;
+}
 
 export interface AuctionSessionRequest {
     productId: number;

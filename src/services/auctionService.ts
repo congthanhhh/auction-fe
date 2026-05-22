@@ -1,9 +1,11 @@
+import type { AxiosRequestConfig } from 'axios';
 import { api } from './api';
 import { API_ENDPOINTS } from '@/constants/api';
 import type {
     AuctionSessionRequest,
     AuctionSessionResponse,
     AuctionStatus,
+    CreateAuctionSessionResponse,
     PageResponse,
     UpdateAuctionSessionRequest,
 } from '@/types/auction';
@@ -14,7 +16,7 @@ import type { InvoiceResponse } from '@/types/invoice';
  * API interceptor tự động return response.data, nhưng TypeScript không biết điều này
  * Hàm này giúp cast type một cách rõ ràng và dễ hiểu
  */
-function unwrapApiResponse<T>(response: any): T {
+function unwrapApiResponse<T>(response: unknown): T {
     return response as T;
 }
 
@@ -30,10 +32,12 @@ export const auctionService = {
     },
 
     getAuctionSessionDetail: async (
-        id: string | number
+        id: string | number,
+        config?: AxiosRequestConfig,
     ): Promise<AuctionSessionResponse> => {
         const response = await api.get(
-            API_ENDPOINTS.AUCTION.DETAIL(String(id))
+            API_ENDPOINTS.AUCTION.DETAIL(String(id)),
+            config,
         );
         return unwrapApiResponse<AuctionSessionResponse>(response);
     },
@@ -89,7 +93,8 @@ export const auctionService = {
         await api.put(API_ENDPOINTS.AUCTION.UPDATE_SESSION(numericId), data);
     },
 
-    createSession: async (data: AuctionSessionRequest): Promise<void> => {
-        await api.post(API_ENDPOINTS.AUCTION.CREATE_SESSION, data);
+    createSession: async (data: AuctionSessionRequest): Promise<CreateAuctionSessionResponse> => {
+        const response = await api.post(API_ENDPOINTS.AUCTION.CREATE_SESSION, data);
+        return unwrapApiResponse<CreateAuctionSessionResponse>(response);
     },
 };

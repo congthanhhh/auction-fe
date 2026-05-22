@@ -106,6 +106,7 @@ export default function Detail() {
     const requireAuth = useRequireAuth();
     const navigate = useNavigate();
     const currentUser = useAuthStore((state) => state.user);
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const {
         auction,
         isLoading,
@@ -121,7 +122,7 @@ export default function Detail() {
 
     useEffect(() => {
         if (id) {
-            fetchAuctionDetail(id);
+            fetchAuctionDetail(id, { skipAuthRedirect: !isAuthenticated });
             socketService.connect();
             const roomName = `session-${id}`;
             socketService.joinRoom(roomName);
@@ -143,7 +144,7 @@ export default function Detail() {
                 socketService.disconnect();
             };
         }
-    }, [id, fetchAuctionDetail, handleNewBid, handlePriceUpdate]);
+    }, [id, isAuthenticated, fetchAuctionDetail, handleNewBid, handlePriceUpdate]);
 
 
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -173,7 +174,7 @@ export default function Detail() {
             try {
                 setIsSellerLoading(true);
                 setSellerError(null);
-                const profile = await userService.getPublicProfile(sellerId);
+                const profile = await userService.getPublicProfile(sellerId, { skipAuthRedirect: !isAuthenticated });
 
                 if (!shouldIgnore) {
                     setSellerProfile(profile);
@@ -196,7 +197,7 @@ export default function Detail() {
         return () => {
             shouldIgnore = true;
         };
-    }, [auction?.product.seller.id]);
+    }, [auction?.product.seller.id, isAuthenticated]);
 
     useEffect(() => {
         const sellerId = auction?.product.seller.id;
@@ -215,7 +216,7 @@ export default function Detail() {
             try {
                 setIsSellerFeedbackLoading(true);
                 setSellerFeedbackError(null);
-                const response = await feedbackService.getPublicFeedback(sellerId, 1, 3);
+                const response = await feedbackService.getPublicFeedback(sellerId, 1, 3, { skipAuthRedirect: !isAuthenticated });
 
                 if (!shouldIgnore) {
                     setSellerFeedback(response.data ?? []);
@@ -240,7 +241,7 @@ export default function Detail() {
         return () => {
             shouldIgnore = true;
         };
-    }, [auction?.product.seller.id]);
+    }, [auction?.product.seller.id, isAuthenticated]);
 
     const handlePlaceBid = () => {
         if (!id) return;
