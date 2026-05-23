@@ -1,4 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -6,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdminConfirmDialog } from "@/components/admin/shared/AdminConfirmDialog";
 import { AdminPageHeader } from "@/components/admin/shared/AdminPageHeader";
-import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "@/components/admin/shared/AdminStates";
+import { AdminEmptyState, AdminErrorState, AdminLoadingState, AdminNotice } from "@/components/admin/shared/AdminStates";
 import { adminService } from "@/services/adminService";
 import type { PermissionResponse, RoleResponse } from "@/types/user";
 
@@ -18,15 +20,26 @@ function getErrorMessage(error: unknown, fallback: string): string {
 }
 
 export default function AdminRoles() {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [roles, setRoles] = useState<RoleResponse[]>([]);
     const [permissions, setPermissions] = useState<PermissionResponse[]>([]);
+    const [tab, setTab] = useState(searchParams.get("tab") === "permissions" ? "permissions" : "roles");
     const [dialogType, setDialogType] = useState<"role" | "permission" | null>(null);
+    const [deletingRole, setDeletingRole] = useState<RoleResponse | null>(null);
+    const [deletingPermission, setDeletingPermission] = useState<PermissionResponse | null>(null);
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [permissionNames, setPermissionNames] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
+
+    useEffect(() => {
+        const next = new URLSearchParams();
+        if (tab !== "roles") next.set("tab", tab);
+        setSearchParams(next, { replace: true });
+    }, [setSearchParams, tab]);
 
     const loadRoles = useCallback(async () => {
         try {
@@ -62,6 +75,7 @@ export default function AdminRoles() {
         try {
             setIsSubmitting(true);
             setError(null);
+            setSuccess(null);
             if (dialogType === "role") {
                 await adminService.createRole({
                     name: name.trim(),
@@ -71,11 +85,13 @@ export default function AdminRoles() {
                         .map((permission) => permission.trim())
                         .filter(Boolean),
                 });
+                setSuccess(`${name.trim()} role was created.`);
             } else if (dialogType === "permission") {
                 await adminService.createPermission({
                     name: name.trim(),
                     description: description.trim(),
                 });
+                setSuccess(`${name.trim()} permission was created.`);
             }
             setDialogType(null);
             await loadRoles();
@@ -87,26 +103,32 @@ export default function AdminRoles() {
     };
 
     const deleteRole = async (role: RoleResponse) => {
-        const confirmed = window.confirm(`Delete role "${role.name}"?`);
-        if (!confirmed) return;
-
         try {
+            setIsSubmitting(true);
+            setSuccess(null);
             await adminService.deleteRole(role.name);
+            setSuccess(`${role.name} role was deleted.`);
+            setDeletingRole(null);
             await loadRoles();
         } catch (err) {
             setError(getErrorMessage(err, "Could not delete role."));
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     const deletePermission = async (permission: PermissionResponse) => {
-        const confirmed = window.confirm(`Delete permission "${permission.name}"?`);
-        if (!confirmed) return;
-
         try {
+            setIsSubmitting(true);
+            setSuccess(null);
             await adminService.deletePermission(permission.name);
+            setSuccess(`${permission.name} permission was deleted.`);
+            setDeletingPermission(null);
             await loadRoles();
         } catch (err) {
             setError(getErrorMessage(err, "Could not delete permission."));
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -142,8 +164,9 @@ export default function AdminRoles() {
             />
 
             {error && <p className="mb-3 text-sm text-destructive">{error}</p>}
+            <AdminNotice tone="success" message={success} />
 
-            <Tabs defaultValue="roles">
+            <Tabs value={tab} onValueChange={setTab}>
                 <TabsList className="mb-4">
                     <TabsTrigger value="roles">Roles</TabsTrigger>
                     <TabsTrigger value="permissions">Permissions</TabsTrigger>
@@ -175,7 +198,7 @@ export default function AdminRoles() {
                                                     variant="ghost"
                                                     size="icon-sm"
                                                     className="text-destructive hover:text-destructive"
-                                                    onClick={() => void deleteRole(role)}
+                                                    onClick={() => setDeletingRole(role)}
                                                 >
                                                     <Trash2 className="size-4" />
                                                 </Button>
@@ -210,7 +233,7 @@ export default function AdminRoles() {
                                                     variant="ghost"
                                                     size="icon-sm"
                                                     className="text-destructive hover:text-destructive"
-                                                    onClick={() => void deletePermission(permission)}
+                                                    onClick={() => setDeletingPermission(permission)}
                                                 >
                                                     <Trash2 className="size-4" />
                                                 </Button>
@@ -268,6 +291,36 @@ export default function AdminRoles() {
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <AdminConfirmDialog
+                open={Boolean(deletingRole)}
+                title="Delete role"
+                description={
+                    deletingRole
+                        ? `Delete role "${deletingRole.name}"? Existing users may depend on this role.`
+                        : ""
+                }
+                confirmLabel="Delete role"
+                destructive
+                isSubmitting={isSubmitting}
+                onOpenChange={(open) => !open && setDeletingRole(null)}
+                onConfirm={() => deletingRole && void deleteRole(deletingRole)}
+            />
+
+            <AdminConfirmDialog
+                open={Boolean(deletingPermission)}
+                title="Delete permission"
+                description={
+                    deletingPermission
+                        ? `Delete permission "${deletingPermission.name}"? Existing roles may depend on this permission.`
+                        : ""
+                }
+                confirmLabel="Delete permission"
+                destructive
+                isSubmitting={isSubmitting}
+                onOpenChange={(open) => !open && setDeletingPermission(null)}
+                onConfirm={() => deletingPermission && void deletePermission(deletingPermission)}
+            />
         </div>
     );
 }

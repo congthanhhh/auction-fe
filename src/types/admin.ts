@@ -6,7 +6,6 @@ import type {
     PageResponse,
     ProductResponse,
     ProductSearchRequest,
-    ProductStatus,
     SimpleUserResponse,
 } from "@/types/auction";
 import type {
@@ -78,11 +77,6 @@ export interface ProductUpdateRequest {
     attributes?: string;
     imageIdsToAdd?: number[];
     imageIdsToRemove?: number[];
-}
-
-export interface ProductVerifyRequest {
-    status: Extract<ProductStatus, "ACTIVE" | "REJECTED" | "BANNED">;
-    note?: string;
 }
 
 export interface SimpleAdminProductResponse {

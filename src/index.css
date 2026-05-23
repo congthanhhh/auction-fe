@@ -176,3 +176,59 @@
         border-color: var(--border);
     }
 }
+
+@layer components {
+    .admin-shell [data-slot="button"][data-variant="default"] {
+        @apply bg-brand text-white hover:bg-brand-hover;
+    }
+
+    .admin-shell [data-slot="button"][data-variant="outline"] {
+        @apply border-brand/25 text-brand2 hover:bg-brand/10 hover:text-brand2 dark:text-brand;
+    }
+
+    .admin-shell [data-slot="card"] {
+        @apply rounded-md border-brand/15 bg-white shadow-sm dark:bg-card;
+    }
+
+    .admin-shell [data-slot="card-title"] {
+        @apply text-brand2 dark:text-brand;
+    }
+
+    .admin-shell [data-slot="input"],
+    .admin-shell [data-slot="select-trigger"] {
+        @apply border-brand/20 bg-white focus-visible:border-brand focus-visible:ring-brand/25 dark:bg-card;
+    }
+
+    .admin-shell [data-slot="table-container"] {
+        @apply bg-white dark:bg-card;
+    }
+
+    .admin-shell [data-slot="table-header"] {
+        @apply bg-brand2;
+    }
+
+    .admin-shell [data-slot="table-header"] tr {
+        background-color: #223345;
+    }
+
+    .admin-shell [data-slot="table-head"] {
+        @apply font-semibold text-white;
+        color: #ffffff !important;
+    }
+
+    .admin-shell [data-slot="table-head"] * {
+        color: inherit !important;
+    }
+
+    .admin-shell [data-slot="table-row"] {
+        @apply hover:bg-brand/5;
+    }
+
+    .admin-shell [data-slot="badge"][data-variant="default"] {
+        @apply bg-brand text-white;
+    }
+
+    .admin-shell [data-slot="badge"][data-variant="secondary"] {
+        @apply bg-brand/10 text-brand2 dark:text-brand;
+    }
+}

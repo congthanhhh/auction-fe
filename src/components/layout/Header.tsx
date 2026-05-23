@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, User, Menu, ChevronDown, X, LogOut } from 'lucide-react';
+import { Search, User, Menu, ChevronDown, X, LogOut, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -33,6 +33,7 @@ import { productService } from '@/services/productService';
 import type { CategoryResponse, ProductResponse } from '@/types/auction';
 import { NotificationBell } from './NotificationBell';
 import { useRequireAuth } from '@/hooks/use-require-auth';
+import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { HeaderSearchSuggestions } from './HeaderSearchSuggestions';
 
@@ -41,6 +42,7 @@ export default function Header() {
     const location = useLocation();
     const { t } = useTranslation();
     const { isAuthenticated, user, logoutWithApi } = useAuthStore();
+    const { isAdmin } = useAdminAuth();
     const requireAuth = useRequireAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchExpanded, setSearchExpanded] = useState(false);
@@ -225,6 +227,14 @@ export default function Header() {
                             <LanguageSwitcher />
                             {isAuthenticated ? (
                                 <>
+                                    {isAdmin && (
+                                        <Button asChild className="bg-brand2 font-bold hover:bg-brand dark:bg-brand-hover dark:hover:bg-brand">
+                                            <Link to="/admin">
+                                                <ShieldCheck className="h-4 w-4" />
+                                                Admin
+                                            </Link>
+                                        </Button>
+                                    )}
                                     <NotificationBell />
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
@@ -470,6 +480,14 @@ export default function Header() {
                                                     {t('navigation.profile')}
                                                 </Button>
                                             </Link>
+                                            {isAdmin && (
+                                                <Link to="/admin" onClick={() => setMobileMenuOpen(false)}>
+                                                    <Button className="w-full bg-brand2 text-lg justify-start hover:bg-brand">
+                                                        <ShieldCheck className="mr-2 h-4 w-4" />
+                                                        Admin
+                                                    </Button>
+                                                </Link>
+                                            )}
                                             <Button
                                                 variant="destructive"
                                                 className="w-full text-lg justify-start"

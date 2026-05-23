@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AdminPageHeader } from "@/components/admin/shared/AdminPageHeader";
-import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "@/components/admin/shared/AdminStates";
+import { AdminEmptyState, AdminErrorState, AdminLoadingState, AdminNotice } from "@/components/admin/shared/AdminStates";
 import { adminService } from "@/services/adminService";
 import type { AdminSettingResponse, AdminSettingValue } from "@/types/admin";
 
@@ -53,6 +53,7 @@ export default function AdminSettings() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
 
     const loadSettings = useCallback(async () => {
         try {
@@ -89,7 +90,9 @@ export default function AdminSettings() {
         try {
             setIsSubmitting(true);
             setError(null);
+            setSuccess(null);
             await adminService.updateSetting(editingSetting.key, parseSettingValue(value));
+            setSuccess(`${editingSetting.key} was updated.`);
             setEditingSetting(null);
             await loadSettings();
         } catch (err) {
@@ -113,6 +116,7 @@ export default function AdminSettings() {
             />
 
             {error && <p className="mb-3 text-sm text-destructive">{error}</p>}
+            <AdminNotice tone="success" message={success} />
 
             {isLoading ? (
                 <AdminLoadingState title="Loading settings..." />

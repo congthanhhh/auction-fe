@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -19,12 +20,19 @@ function getErrorMessage(error: unknown, fallback: string): string {
 }
 
 export default function AdminLogs() {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [logs, setLogs] = useState<AdminLogResponse[]>([]);
-    const [page, setPage] = useState(1);
+    const [page, setPage] = useState(Number(searchParams.get("page") ?? "1") || 1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalElements, setTotalElements] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const next = new URLSearchParams();
+        if (page > 1) next.set("page", String(page));
+        setSearchParams(next, { replace: true });
+    }, [page, setSearchParams]);
 
     const loadLogs = useCallback(async () => {
         try {

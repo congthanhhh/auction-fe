@@ -13,6 +13,7 @@ import type {
     AdminPageQuery,
     AdminProductSearchParams,
     AdminProductsPage,
+    AdminAuctionSessionResponse,
     AdminSettingResponse,
     AdminSettingValue,
     AdminUpdateInvoiceRequest,
@@ -22,7 +23,6 @@ import type {
     AdminUsersPage,
     PermissionRequest,
     ProductUpdateRequest,
-    ProductVerifyRequest,
     ResolveDisputeRequest,
     RoleRequest,
     StatisticResponse,
@@ -95,11 +95,10 @@ export const adminService = {
         return unwrapApiResponse<AdminProductsPage>(response);
     },
 
-    verifyProduct: async (
-        id: number,
-        payload: ProductVerifyRequest,
-    ): Promise<MessageResponse | ProductResponse> => {
-        const response = await api.patch(API_ENDPOINTS.PRODUCT.ADMIN_VERIFY(id), payload);
+    verifyProduct: async (id: number, isApproved: boolean): Promise<MessageResponse | ProductResponse> => {
+        const response = await api.patch(API_ENDPOINTS.PRODUCT.ADMIN_VERIFY(id), null, {
+            params: { isApproved },
+        });
         return unwrapApiResponse<MessageResponse | ProductResponse>(response);
     },
 
@@ -116,9 +115,9 @@ export const adminService = {
     updateAuction: async (
         id: number,
         payload: AdminUpdateSessionRequest,
-    ): Promise<AdminUpdateSessionRequest> => {
+    ): Promise<AdminAuctionSessionResponse | MessageResponse> => {
         const response = await api.put(API_ENDPOINTS.ADMIN.AUCTION_UPDATE(id), payload);
-        return unwrapApiResponse<AdminUpdateSessionRequest>(response);
+        return unwrapApiResponse<AdminAuctionSessionResponse | MessageResponse>(response);
     },
 
     searchInvoices: async (params: AdminInvoiceSearchParams = {}): Promise<AdminInvoicesPage> => {

@@ -1,13 +1,15 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Edit, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AdminConfirmDialog } from "@/components/admin/shared/AdminConfirmDialog";
 import { AdminPageHeader } from "@/components/admin/shared/AdminPageHeader";
 import { AdminPagination } from "@/components/admin/shared/AdminPagination";
-import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "@/components/admin/shared/AdminStates";
+import { AdminEmptyState, AdminErrorState, AdminLoadingState, AdminNotice } from "@/components/admin/shared/AdminStates";
 import { adminService } from "@/services/adminService";
 import type { CategoryResponse } from "@/types/auction";
 
@@ -20,17 +22,26 @@ function getErrorMessage(error: unknown, fallback: string): string {
 }
 
 export default function AdminCategories() {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [categories, setCategories] = useState<CategoryResponse[]>([]);
     const [editingCategory, setEditingCategory] = useState<CategoryResponse | null>(null);
+    const [deletingCategory, setDeletingCategory] = useState<CategoryResponse | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [page, setPage] = useState(1);
+    const [page, setPage] = useState(Number(searchParams.get("page") ?? "1") || 1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalElements, setTotalElements] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
+
+    useEffect(() => {
+        const next = new URLSearchParams();
+        if (page > 1) next.set("page", String(page));
+        setSearchParams(next, { replace: true });
+    }, [page, setSearchParams]);
 
     const loadCategories = useCallback(async () => {
         try {
@@ -71,11 +82,14 @@ export default function AdminCategories() {
         try {
             setIsSubmitting(true);
             setError(null);
+            setSuccess(null);
             const payload = { name: name.trim(), description: description.trim() };
             if (editingCategory) {
                 await adminService.updateCategory(editingCategory.id, payload);
+                setSuccess(`${payload.name} was updated.`);
             } else {
                 await adminService.createCategory(payload);
+                setSuccess(`${payload.name} was created.`);
             }
             setIsDialogOpen(false);
             await loadCategories();
@@ -87,15 +101,18 @@ export default function AdminCategories() {
     };
 
     const deleteCategory = async (category: CategoryResponse) => {
-        const confirmed = window.confirm(`Delete category "${category.name}"?`);
-        if (!confirmed) return;
-
         try {
+            setIsSubmitting(true);
             setError(null);
+            setSuccess(null);
             await adminService.deleteCategory(category.id);
+            setSuccess(`${category.name} was deleted.`);
+            setDeletingCategory(null);
             await loadCategories();
         } catch (err) {
             setError(getErrorMessage(err, "Could not delete category."));
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -119,6 +136,7 @@ export default function AdminCategories() {
             />
 
             {error && <p className="mb-3 text-sm text-destructive">{error}</p>}
+            <AdminNotice tone="success" message={success} />
 
             {isLoading ? (
                 <AdminLoadingState title="Loading categories..." />
@@ -150,7 +168,7 @@ export default function AdminCategories() {
                                                 variant="ghost"
                                                 size="icon-sm"
                                                 className="text-destructive hover:text-destructive"
-                                                onClick={() => void deleteCategory(category)}
+                                                onClick={() => setDeletingCategory(category)}
                                             >
                                                 <Trash2 className="size-4" />
                                             </Button>
@@ -207,6 +225,21 @@ export default function AdminCategories() {
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <AdminConfirmDialog
+                open={Boolean(deletingCategory)}
+                title="Delete category"
+                description={
+                    deletingCategory
+                        ? `Delete "${deletingCategory.name}"? Products may depend on this category, so the backend may reject the request.`
+                        : ""
+                }
+                confirmLabel="Delete"
+                destructive
+                isSubmitting={isSubmitting}
+                onOpenChange={(open) => !open && setDeletingCategory(null)}
+                onConfirm={() => deletingCategory && void deleteCategory(deletingCategory)}
+            />
         </div>
     );
 }
